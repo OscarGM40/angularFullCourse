@@ -1,0 +1,344 @@
+						SECCION 23 DIRECTIVAS APP
+
+Documentación oficial para directivas: https://angular.io/guide/attribute-directives
+
+			VIDEOS 342 Y 343 INICIO PROYECTO Y ESTRUCTURA DE LA APP
+
+Puedo ver como con ng generate directive name pueden generarse directivas.Si bien el ejemplo que trae la doc es explicativo no es muy útil(solo pone un background-color).Vamos a crear directivas para validar errores de formularios,algo mucho más útil.
+Fijate que a las directivas se las puede pasar argumentos.
+
+						SCSS Y ANTERIORMENTE SASS
+
+1- Para usar Sass hay que instalarlo de manera global con npm:
+>npm i sass -g
+>sass --version <- para ver la version
+
+2- Si bien hay extensiones de VSC que transpilan los archivos sass también puedo usar el comando sass --watch folderWithSass:folderWithCSS donde el primer folder tendrá sintaxis sass(o scss)  y el interprete lo irá compilando al segundo,que será css interpretable por el browser:
+>sass --watch sass:css <- esto básicamente es hacer yo a mano el transpilado.En Angular me ayuda el framework pero en React quizas tengo que hacerlo asi(investigar más).
+
+IMPORTANTE:la extensión .sass es una versión vieja,ya no se usa.Ahora debo usar siempre  .scss(pero debo usar éste intérprete dado que scss sólo es la evolución de sass).Además que en los .sass la sintaxis cambia un poco.
+
+3- Puedo declarar variables con $key:value e inferirla con $key de nuevo(si son bastantes se crean archivos aparte):
+$colorUno:ffffff;
+h1 { color: $colorUno} <- ojo que es $key en todos los lados
+
+4- Puedo crear archivos para declaraciones como _variables.scss y despues requerirlos,asi tendrán visión sobre estas variables $colorUno,etc
+todos los archivos que lo importen,y no sólo un único archivo(el paso 3).Para importar un archivo se usa @import "filename" (sin extensión):
+>@import "variables"; <- aunque lo declare como _variables.scss lo importo sin el underscore
+IMPORTANTE: esta es la metodología que se usa cuando se crean sitios web con muchos estilos,asi que debo incorporarlo. 
+
+5- Por último,los mixins permiten reutilizar bloques de reglas CSS.Simplemente se usa la keyword @mixin nombre {reglas} y llamo a ese bloque con @include.No confundir con @import para traer archivos enteros.
+
+Ejemplo.Defino un @mixin llamado cuadrado:
+
+@mixin cuadrado {
+ width:400px;
+ height:250px;
+ background-color:red;...
+} 
+.cuadrado-1 {
+  @include cuadrado;
+}
+.cuadrado-2 {
+  @include cuadrado;
+} <- ahora puedo crear cuadrados fácilmente 	
+* Realmente un mixin es una función,asi que puedo pasar argumentos e iniciarlos por defecto:
+
+@mixin cuadrado($width,$fondo:red) {
+ width:$width;
+  height:250px;
+  color:$color;
+
+Ahora pueden llamar a esta funcion y tendrán que pasar el ancho si o si,pero el color si no lo pasan se pondrá en red.
+.cuadrado-1 {
+  @include cuadrado(400px,blue);
+} <- este le pasa los dos
+
+.cuadrado-2 {
+  @include cuadrado(500px);
+} <- este se conforma con el red por defecto
+* Fijate que usar un preprocesador me da funcionalidades extra y apenas le suma complejidad.Debo hacer más proyectos en SASS
+
+Volviendo al proyecto,desde ahora debo pensar en el folder shared no solo como un lugar para alojar componentes que compartiré a lo largo de toda mi aplicación sino también como un lugar para colocar directivas que van a funcionar en toda la aplicación. 
+
+Fijate en el uso de nuevas clases como g-3 para decir que es un grupo de 3(implica un display-flex) o de col-auto para que coga las columnas en base al contenido:
+
+* Divides la fila en 3 y las columnas,aunque serán siempre 3 que se repartan el espacio en base a su contenido
+ <div class="row g-3 align-items-center mb-3">
+    <div class="col-auto">
+      <label for="" class="col-form-label">Nombre</label>
+    </div>
+    <div class="col-auto">
+      <input type="text" class="form-control" />
+    </div>
+
+				VIDEO 344 FORMULARIO REACTIVO TRADICIONAL
+
+Dado que vamos a trabajar con formularios lo primero es implementar los formularios reactivos.Fijate que no necesito importarlo en el app.module,con importarlo en el productos.module me vale,ya que es el único componente.
+Fijate que esto implicará 3 cosas:
+1º: pasarle al form la directiva [formGroup]="miFormulario"
+2º: por cada campo usar formControlName="propiedad del objeto" <- sin corchetes
+3º: en la clase inyectar el FormBuilder y crear miFormulario:FormGroup=this.fb.group({ propiedad:["value",[Validators],] });
+
+IMPORTANTISIMO: parece que la mejor forma de imprimir errores es con la propiedad invalid!:
+   <span class="form-text"
+      *ngIf="miFormulario.get('nombre')?.invalid"
+      >Este campo es requerido</span>
+
+Aunque puedo sacar esto a un método es algo que voy a estar usando bastante,asi que es buena idea crear una directiva.Además,las directivas tienen bastante control sobre el HTML
+
+					VIDEO 345 DIRECTIVA CUSTOM ErrorMsg
+
+Dado que las directivas son algo compartido,creo una nueva carpeta en shared llamada directives(más adelante lo haremos por cli).Recuerda que los módulos en Angular son independientes,asi que cualquier componente fuera de este shared.module que requiera estas directivas tendrá que importar este modulo.
+>ng g d shared/directives/errorMsg --skip-tests
+
+* Fijate que actualiza el modulo donde la declare,en el arreglo declarations la definirá,pero aún me queda exportarla en el array exports.Y además recuerda que estoy en un módulo,asi que si otro módulo quiere la directiva ese modulo tiene que importar el módulo shared:
+
+1- En el sharedModule la exporto:
+@NgModule({
+  declarations: [
+    ErrorMsgDirective
+  ],
+  exports:[
+    ErrorMsgDirective
+  ]
+})
+export class SharedModule { }
+
+2-Dado que la quiere ProductosModule importo el módulo donde está ella:
+imports: [
+    CommonModule,
+    ProductosRoutingModule,
+    ReactiveFormsModule,
+    SharedModule
+  ]
+})
+export class ProductosModule { }
+
+* En cuanto a la directiva es otra clase con el decorador @Directive que viene del core y donde este decorador le asigna una propiedad/atributo para usar en una tag HTML.Fijate que para declararla tengo que usar corchetes,pero la llamaré como un simple atributo.
+import { Directive } from '@angular/core';
+
+@Directive({
+  selector: '[appErrorMsg]'
+})
+export class ErrorMsgDirective {
+
+  constructor() { }
+
+}
+* Para llamarla simplemente la llamo como un atributo:
+<span appErrorMsg ...> 
+
+* Las directivas pueden incorporar los ciclos de vida perfectamente asi que puedo crear lógica en base a estos ciclos de vida
+@Directive({
+  selector: '[error-msg]',
+})
+export class ErrorMsgDirective implements OnInit {
+  
+  constructor() {
+    console.log('constructor directiva');
+  }
+
+  ngOnInit(): void {
+    console.log("OnInit en la directiva")
+  }
+}
+* Al llamar a la propiedad error-msg simplemente sucederán dos console.log,pero fijate como estoy creando mis propios atributos HTML que podré personalizar 
+
+				VIDEO 346 DIRECTIVA INPUT PARA CAMBIAR EL COLOR
+
+Con las directivas voy a poder cambiar estilos,agregar o cambiar funcionalidades o el contenido(texto).Veamos como cambiar el color a algo(de momento en rojo para el span del error).
+Dado que estoy en una clase voy a poder inyectar instancias de otras clases en el constructor:
+*Puedo referenciar el elemento HTML que llame a la directiva(un span)
+
+constructor( private el: ElementRef<HTMLElement>){
+  console.log(el.nativeElement)
+  }
+
+Para cambiar el color solo tengo que hacer(fijate que es puro Javascript):
+this.el.nativeElement.style.color="red";
+
+¿Pero como hago para poder dejar al usuario que elija el color en la directiva?.Hay muchas maneras en las cuales puedo mandar información a las directivas,una de ellas es recibir en la directiva el valor de la etiqueta con @Input.
+
+Fijate que la etiqueta es padre de la directiva:
+@Input() color:string= "red;
+
+setColor():void {
+  this.el.nativeElement.style.color=this.color;
+* Desde ahora puedo mandar desde el padre el color también.Ojo con las llaves cuadradas:
+
+Si voy a enlazar una propiedad de la clase necesito las llaves cuadradadas si o si:
+colorQueQuiero: string = "green";
+En la template:
+<span error-msg
+  [color]="colorQueQuiero" <-dado que es una propiedad de la clase necesito llaves cuadradas.
+
+Pero si le voy a mandar un string cualquiera no las necesito(de echo no las puedo poner):
+<h3 class="mt-5" error-msg color="orange">Formulario</h3>
+<pre error-msg color="#6857E6">{{miFormulario.invalid | json }}
+* Fijate como en este caso no debo usar corchetes,porque no voy a enlazar una propiedad y me daría fallo.
+
+				VIDEO 347 CAMBIAR EL MENSAJE DE LA ETIQUETA
+
+NOTA: fijate que la extensión para Chrome ColorZilla es genial.Incluso puede analizar los colores de la web.Volviendo al curso,la tarea de este video es añadir otra prop por @Input con el mensaje dado por Fernando:
+<span error-msg [color]="propiedad" mensaje="ingrese el nombre,por favor"> <- fijate en la diferencia de inferir una propiedad o no y los []
+*En la directiva:
+@Input() mensaje:string="";
+
+setMensaje():void{ this.el.nativeElement.textContent = this.mensaje;
+
+Incluso podria poner todo esto por defecto y no pasar props desde el padre.O pasarle clases CSS:
+
+setClase():void{ this.el.nativeElement.classList.add("form-text") } <- es puro JS,memoriza que para agregar una clase se usa add() y en la propiedad classList tengo todas las clases de ese elemento.
+
+IMPORTANTE: ya no se recomienda el uso de nativeElement sino que se recomienda usar Renderer2:
+
+No es que nativeElement directamente sea inseguro, pero sí hace más probable que seas vulnerable a un XSS si no se programa bien, es por eso que Renderer2 ya viene más seguro y es más difícil que lo hagamos mal y seamos vulnerables.
+Está bien saber cómo se trabaja con nativeElement, y si no nos queda otra que usarlo no es un mal recurso, pero priorizaría Renderer2 actualmente, ya que la tendencia va por ahí.
+
+				VIDEO 348 REACCIONAR A LOS CAMBIOS EN TIEMPO REAL
+
+Realmente hasta ahora no hemos hecho nada dinámico.Fijate que como tengo ahora el código el setMensaje sólo se va a ejecutar una vez,en el OnInit:
+  ngOnInit(): void {
+    this.setColor()
+    this.setMensaje();
+    this.setClase();
+  }
+*DEbo pues,usar otro ciclo de vida,como el onChange.En realidad hay varias formas de solventar esto.Vamos a ver dos formas,la segunda es la forma recomendada por Fernando.Para la primera implemento el ciclo de vida OnChanges:
+
+* Fijate que los cambios son de tipo SimpleChanges
+export class ... implements OnChanges {
+
+ngOnChanges(changes: SimpleChanges) { console.log(changes)}
+}
+Si simplemente los imprimo veré los cambios que detecta Angular:
+
+mensaje: SimpleChange
+currentValue: "Fernando Herrera Dios del frontend"
+firstChange: true
+previousValue: undefined
+[[Prototype]]: Object
+[[Prototype]]: Object
+index.js:52 
+
+Fijate que en esta instancia u objeto changes tengo el mensaje(entre otros más como el color).Asi que lo puedo extraer:
+const {mensaje} = changes;
+console.log(mensaje?.currentValue);
+
+Pero esto da problemas,porque en los changes siempre recibo el valor de el último cambio del input.Asi que cuando cambie el color el ciclo ngOnChanges sólo me va a notificar de los cambios en el color y estoy intentando acceder a changes.mensaje.currentValue(y mensaje es undefined porque no cambió).Podria hacer esto para evitarlo:
+*Dentro del ngOnChanges:
+
+ngOnChanges(changes:SimpleChanges) {
+   if(changes.mensaje){ <- si cambia el mensaje lo cambias,si cambia otra cosas no hagas nada
+    const mensaje = changes.mensaje.currentValue;  
+   this.el.nativeElement.innerText = mensaje;
+  }
+  Pero también me obliga a cambiar el color,ya que dejé de escuchar por sus cambios
+  if(changes.color){
+    const color = changes.color.currentValue;
+    this.el.nativeElement.styles.color=color;
+* Puedo ver que el código es engorroso y dificil de mantener.Imagina una directiva compleja con decenas de Inputs.Debería de haber una manera más sencilla de hacer esto y si la hay.
+
+						VIDEO 349 INPUT GETTERS & SETTERS
+
+Veamos una forma mucho más efectiva de hacer los cambios cuando se reciben por inputs(ojo,que se refiere a data que entra por @input).
+La verdad es que la sintaxis es un poco rara la primera vez.:
+
+* ES @Input set propiedad(){} <- y una funcion para el setter
+@Input set color(valor:string){
+  this.htmlElement.nativeElement.style.color = valor;
+}
+* Básicamente estoy utilizando un setter,y estamos cambiando la propiedad(pero no la estamos manteniendo,sólo cambiando).La sintaxis es mucho más sencilla con setters que con ngOnChanges,claramente.Si necesitará guardar esa propiedad(es decir,crear un setter completo simplemente declaro una propiedad en la clase):
+
+private _color:string;
+@Input set color(valor:string){
+  this.htmlElement.nativeElement.style.color = valor;
+  this._color = valor; <- aquí si la estoy guardando
+
+Esta propiedad es importante tal como tenemos el código porque en el ngOnInit mensaje y color van a ser undefined:
+
+  ngOnInit(): void {
+    console.log(this.color); <- undefined
+    console.log(this.color); <- undefined
+    this.setColor()
+    this.setMensaje();
+Yo lo solucioné creando una propiedad getter y que setColor llame a _color en vez de a color,pero Fernando eliminó la lógica del ngOnInit.Fijate que sería buena idea no usar tanta lógica
+setMensaje(){
+this.el ... = this._mensaje; <- dado que 'mensaje' ya no existe hay que cambiar por '_mensaje'.
+
+   private _color: string = 'red';
+  private _mensaje: string = 'Este campo es requerido';
+  
+  htmlElement: ElementRef<HTMLElement>;
+  
+  //ya no usaré @Input() color:string="red" sino un setter y un getter.Esto me da control absoluto
+  @Input() set color(valor: string) {
+    this._color = valor;
+    // mas claro llamando al método
+    this.setColor(); //es lo mismo llamar al método que llamar al contenido del método =>
+    // this.htmlElement.nativeElement.style.color = this._color;
+  }
+* Fijate que esta forma me da control absoluto.Adjudicada.
+
+			VIDEO 351 MOSTRAR Y OCULTAR EL ERROR CONDICIONALMENTE
+
+Sólo nos queda mostrar y ocultar esta etiqueta <span>  del error según haya un error o no.Fernando conoce dos formas de hacerlo,la segunda es manipulando la propia directiva,pero de momento vamos con la primera que es creando una propiedad y es más sencilla.
+
+El método tieneError('nombre') siempre devuelve un valor boleano(mira por la propiedad invalid del control).
+Cambiemos la directiva *ngIf por una nueva propiedad [valido] que lógicamente hay que crear en la clase,o en este caso,en la directiva,dado que es la directiva la que esta expandiendo estas propiedades:
+
+[valido]="!tieneError('nombre')" <- es exactamente lo mismo.Me creo la propiedad con el setter en la directiva.Fijate que será válido cuando NO haya errores(uso del !)
+
+* Vamos a añadir y eliminar una clase custom que cambiará el display a none
+  @Input() set valido(valid: boolean) {
+      if(valid){
+        this.htmlElement.nativeElement.classList.add("hidden")
+      }else{
+        this.htmlElement.nativeElement.classList.remove("hidden")
+
+En el componente que llame a esta directiva puedo hacer lo que quiera con el CSS cuando el elemento tenga esta clase.
+
+Hay otra forma donde físicamente destruimos el elemento y lo volvemos a reconstruir.Podriamos acompañar este span con un animate para que tenga una transición,etc.Fijate que al final hemos tenido un control absoluto sobre lo que hemos querido hacer.
+		
+				VIDEO 352 DIRECTIVA PERSONALIZADA ESTRUCTURAL
+
+Realmente no tendría porqué crear esta directiva,podría usar un ngIf de esta forma:
+
+<div class="row mt-5" *ngIf="!tieneError('nombre')">
+  <div class="col">
+    <div class="alert alert-primary">
+      Todo OK!
+    </div>
+  </div>
+</div>
+
+Pero lógicamente lo suyo es aprender a crear mi propia directiva.La llamaremos customIf:
+>ng g d shared/directives/customIf
+* De nuevo recuerda que los módulos son capas de abstración y no se ven asi que tengo que exportarla en el módulo e importar el módulo en el que la quiera usar(el módulo shared ya lo pedí para la anterior directiva).
+
+El selector que trae por defecto es feo.CAmbiemoslo por customIf:
+@Directive({
+  selector: '[appCustomIf]' <- cambiar por customIf a secas
+})
+
+Esta vez no vamos a inyectar el objeto de la clase ElementRef sino que será una instancia de tipo TemplateRef.Esta clase está a un nivel superior comparada con ElementRef.
+Y adicionalmente también vamos a inyectar la clase ViewContainerRef
+
+constructor( private tr:TemplateRef<HTMLElement>, private vc:ViewContainerRef) {} <- la segunda no lleva parámetro de tipo.
+Todo viene de @angular/core.
+
+IMPORTANTE: el TemplateRef necesita un Proveedor,esto es porque necesito mandarle la referencia al elemento HTML  a ese TEmplate.Usualmente creamos referencias locales con #ref pero esta vez tengo que mandar todo el componente y esto se hace con el asterisco '*' en vez del #:
+<div class"mt-5 *customIf> <- fijate que ya he usado * en los *ngFor y *ngIf un montón de veces ya!!
+
+Para crear la lógica vamos a necesitar un setter.Se tiene que llamar customIf,ojo:
+@Input() set customIf( condicion:boolean){
+  // si se cumple la condicion muestro la template ref usando el view container asi
+  if(condicion){
+   this.viewContainer.createEmbbededView(this.templateRef)
+  // y si no lo oculto con el método clear del viewContainer
+  else{
+  this.viewContainer.clear()
+
+* Puedo ver que la sintaxis es compleja pero hay está.Fernando prefiere usar la forma anterior que no introduce mucha complejidad a memorizar.
+
+

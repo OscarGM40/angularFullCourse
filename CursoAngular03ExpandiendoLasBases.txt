@@ -1,0 +1,528 @@
+					VIDEO 51 INTRODUCION A LA SECCION
+
+En esta seccion veremos reutilización de componentes,vamos a mandar información de un componente padre a un componente hijo,también veremos como mandar información de el componente hijo al componente padre.Esto funciona con cualquier longitud de la cadena de transmisión(abuelo-padre-hijo ó nieto-hijo-padre-abuelo),en cualquier dirección.
+Veremos pues como comunicarse entre componentes de varias maneras.Primero lo veremos mediante decoradores @Input y @Output,Event Emitters,...
+Crearemos nuestros eventos personalizados,propiedades personalizadas.También veremos los servicios,los cuales evitan este montón de @Inputs y @Outputs,(un servicio no es más que una clase bajo el patrón singleton en la cual hay información centralizada)
+Hay veces en la que no es necesario pasar la información al servicio y con los @Input y @Output me valdrá.
+Esto también son las bases para mandar información hacia directivas,que es algo que veré más adelante.
+A veces será más fácil usar un Input que un servicio así que hay que dominar los dos.
+
+¿Qué veremos en esta sección?
+Una vez sentadas las bases de Angular en la sección anterior, vamos a seguir expandiéndolas aquí, con los siguientes temas:
+
+Profundizar un poco más en los módulos
+
+FormsModule
+
+ngModel
+
+@Inputs
+
+@outputs
+
+Servicios
+
+Métodos en servicios
+
+Depuraciones
+
+Hay más temas en los videos, pero en forma general esto es lo principal por ahora, tengan presente que aunque todo esto es opcional, la mayor parte de aplicaciones de Angular usan en cierto punto cada uno de los temas que están en esta sección, por lo que hay que asegurarnos de comprender bien cada lección.
+
+			VIDEO 53 CONTINUACIÓN DEL PROYECTO
+
+Vamos a seguir con el proyecto anterior asi que simplemente lo inicio o lo descargo de GitHub,etc...
+Arrancamos el servidor y comento todo el código de la template app.component.html pues no vamos a usar ningun componente anterior
+
+			VIDEO 54 MODULO DBZ			
+
+Es momento de crear un modulo por CLI.Uas hemos visto como crearlo manualemente(se crea el file.module.ts y su clase con el decorador @NgModule)Para crear un modulo por consola es tan facil como usar:
+>>ng generate module dbz <- colgará de app	
+
+* De momento no estamos usando flags adicionales en el ng g c o el ng g m pero se pueden y suelen usar.
+Este comando creará el archivo .module.ts por nosotros:
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+
+
+@NgModule({
+    declarations: [],
+	  imports: [
+	      CommonModule
+		    ]
+})
+export class DbzModule { }
+
+Como es tan común usar las directivas estructurales *ngFor y *ngIf ya nos importa el CommonModule por nosotros.
+IMPORTANTE: Angular es sumamente eficiente y como ya he importado en el heroes.module.ts el mismo módulo/librería CommonModule usará el mismo asi que no tengo que tener miedo de importarlo 15 veces,pues lo cacheará y lo reusará.
+
+Continuo creando un componente,pero esta vez sin el archivo de pruebas que no usaremos:
+
+/01-bases$ ng g c dbz/mainPage --skipTests
+Support for camel case arguments has been deprecated and will be removed in a future major version.
+Use '--skip-tests' instead of '--skipTests'.
+CREATE src/app/dbz/main-page/main-page.component.css (0 bytes)
+CREATE src/app/dbz/main-page/main-page.component.html (24 bytes)
+CREATE src/app/dbz/main-page/main-page.component.ts (286 bytes)
+UPDATE src/app/dbz/dbz.module.ts (283 bytes)
+
+Puedo ver que ya no ha creado el archivo de pruebas y que incluso ha actualizado el módulo al que pertenece. 
+
+			VIDEO 55 DISEÑO DE LA TEMPLATE
+
+En nuestro nuevo componente dbz/mainPage.html creamos una pequeña vista a dos columnas:
+
+<h1>Dragon Ball Z</h1>
+<hr/>
+
+<div class="row">
+   
+   <div class="col">
+   <h3>Personajes</h3>
+   <hr>
+      <ul>
+         <li>Krilin - 700</li>
+         <li>Goku - 15,000</li>
+         <li>Vegeta - 8,500</li>
+      </ul>
+   </div>
+
+   <div class="col">
+      <h3>Agregar</h3>
+      <hr>
+      <form action="">
+         <input 
+         type="text"
+         placeholder="Nombre">
+         <input 
+         type="number" 
+         placeholder="Poder">
+      </form>
+   </div>
+</div
+
+Ponemos la row en flex y cada columna en flex-grow 1.En el siguiente video veremos como evitar el refresh que hace el navegador al mandar el formulario,comportamiento por defecto de cualquier formulario.
+
+					VIDEO 57 ngSubmit & FormsModule
+
+Que una aplicación a estas alturas haga un full-page refresh es algo increíble.Recordemos que llamabamos a un evento con (event)=""
+
+* Con esto en mente le pasamos una función al evento onSubmit:
+<form (submit)="agregar();"
+
+Sin embargo aún sigue haciendo el refresh.Esta claro que la función agregar necesita recibir el Event y hacer un event.PreventDefault().
+Cualquier función en Angular puede recibir el event,pero con un símbolo de $:
+<form (submit)="agregar($event)">
+*en la clase:
+agregar(event:any):void{
+  event.preventDefault();
+
+*Esto es lo que hay que hacer en React u otras tecnologías,pero Angular como es un framework ya trae funcionalidad para evitar tener que recibir el evento y llamar al preventDefault
+Angular dispone de varios módulos cuando trabajamos con formularios(uno para formularios normales y otro para formularios reactivos).De momento usaremos el FormsModule,asi que lo traemos en el array 'imports' del decorador @NgModule del módulo que lo vaya a usar.
+
+  imports: [
+    CommonModule,
+    FormsModule
+]
+* DE momento nos interesa este.Por si sólo,simplemente importandolo no hará nada aún.Lo que hay que hacer es cambiar el evento 'submit' por el evento personalizado de Angular ngSubmit:
+
+ <form (ngSubmit)="agregar()"> 
+* Implementar el evento personalizado 'ngSubmit' evitará el full-refresh en el submit y por ende tener que rescatar el evento y usar el preventDefault sobre él.Muy útil.
+NOta: parece que desde la versión 12 ya simplemente con traer el módulo es suficiente,ni siquiera hay que usar el evento personalizado.
+
+					  VIDEO 57 ngModel
+
+Estamos en un punto donde necesitamos la información del formulario,de las cajas de texto o inputs del mismo.¿Como hacemos esto?
+Hay muchas formas de trabajar con formularios pero en general en un formulario sencillo podemos usar la siguiente manera:
+
+* Primero hay que crear una interfaz para el objeto.
+interface Personaje {
+  nombre: string;
+  poder: number;
+}
+
+En la clase creo un objeto que corresponda/modele al formulario:
+* En este caso es un formulario con dos inputs,luego:
+export class MainPageComponent {
+  nuevo:Personaje = {
+    nombre:'Trunks',
+    poder: 14000
+  }
+* Ahora en el template hay que usar el atributo 'value' de HTML pero entre corchetes(es un servicio por ello¿?).Como valor entre las comillas apunto a cualquier propiedad que deberá existir en la clase.Esto crea un one way data binding de la clase al template
+
+ <input 
+   type="text"
+   placeholder="Nombre"
+   [value]="nuevo.nombre"
+ >
+ <input 
+   type="number"
+   placeholder="poder"
+   [value]="nuevo.poder"
+* Sin embargo esto solo crea el enlace de la clase al template,pero no al revés.Para cambiar el valor y rescatarlo hay muchas formas.
+
+Primero,si la caja de texto envia un texto o valor es porque emite un evento,asi que puedo rescatarlo entre parentésis:
+<input type="text" placeholder="nombre"
+[value]="nuevo.nombre"
+(input)="cambiarNombre($event)" <- rescato el evento input del input
+*Logicamente hay que crear esta funcion en la clase:
+
+ cambiarNombre(event: any): void {
+    console.log(event.target.value);
+  }
+Esto es muy tedioso de realizar aunque funcionar funciona,pero podemos sustituir todo esto:
+   [value]="nuevo.nombre"
+   (input)="cambiarNombre($event)"
+por un ngModel
+ [(ngModel)]="nuevo.nombre" <- va a pedir establecer la propiedad name:
+ name="nombre"
+NOTA: las llaves cuadradas más los parentésis indican que quiero tanto escuchar como emitir el evento.Recuerda que la directiva ngModel necesita de la propiedad name="value".De todas formas se ve bien claro esto en el error
+
+		VIDEO 58 MOSTRAR LISTADO DE PERSONAJES(RESCATAR FORMULARIO)
+
+Vamos a rescatar los datos y agregarlos a un array hardcodeado con dos personajes.Iteraremos sobre la <li> con un ngFor:
+
+    <li *ngFor="let heroe of personajes">
+            <small>{{heroe.nombre}} </small>
+            <small>{{heroe.poder | number}}</small>
+    </li>
+Fijate en el uso del pipe number,que hará graficar el dato como un número(incluirá la coma de los miles).Asi de fácil es decir que un dato es de tipo number,pues Angular tratará cualquier dato en dobles llaves {{ propiedad }} com un string a renderizar.
+
+Agregar simplemente agrego con un push y de paso reseteo el objeto que está enganchado al formulario:
+   this.personajes.push(this.nuevo);
+   this.nuevo={ nombre:'',poder:0 };
+  
+No hay demasiados pipes, y además podemos crear nuestros pipes personalizados.
+
+			VIDEO 59 CREAR COMPONENTES HIJOS 	
+
+El HTML de la template puede crecer muy rápidamente en tamaño,es por ello que se aconseja separar nuestra aplicación en pequeños bloques reutilizables.En este ejemplo tán básico podría separar cada columna en elementos independientes.
+Es lo que vamos a hacer desde ahora.Empecemos por el componente Personajes,que listará los Personajes,asi que creo dentro de la carpeta dbz el componente personajes
+>ng g c dbz/personajes --skip-tests
+Sustituyo la columna de la izquierda con la directiva ngFor y rápidamente veré que tengo el problema que el array personajes es de otro componente,del componente padre,está definido en MainPageComponent.ts pero yo lo necesito en PersonajesComponent.ts.
+
+				VIDEO 60 @Input
+
+La pregunta del millón es: como hago para pasar el arreglo de personajes de la clase main a la clase personajes(fijate que mainPage es la clase padre porque tiene en su template la llamada a <app-personajes> luego es padre de ella).
+
+En el componente hijo vamos a usar el decorador @Input que viene desde el core y le agrego unos parentésis:
+Forma 1: @Input() personajes: any[]=[];
+Forma 2:
+@Input()
+personajes: any[]:=[];
+Ambas formas,en una linea o en dos son totalmente válidas.Sin embargo,sólo por especificar esto no es suficiente,hay que ir a la template que use este componente como selector y enlazarlo con la propiedad de esa clase que va a viajar hasta el hijo:
+
+<app-personajes [personajes]="personajes">
+</app-personajes>  
+
+El primer [personajes] es el del hijo,el que hace de key mientras que el valor lo toma de la propiedad "personajes" que estará en la clase padre
+
+Si lo quiero cambiar puedo usar el argumento del decorador:
+@Input('dataParaElHijo') personajes: any[]=[];
+Esto hará que tenga que renombrar la key en el selector para el hijo:
+<app-personaje [dataParaElHijo]="personajes">
+Por último sería buena idea darle un tipo al array y para no declarar dos veces la misma interfaz creamos el archivo dbz/interfaces/dbz.interface.ts con la interfaz y la exporto desde alli:
+* En el nuevo archivo dbz.interface.ts
+export interface Personaje 
+{
+  nombre: string;
+  poder: number;
+}
+
+Ya puedo importar esta interfaz donde quiera.Recuerda que no compila a nada asi que puedo hacer esto sin ningun miedo a añadir peso a la app:
+import { Component, Input } from '@angular/core';
+import { Personaje } from '../interfaces/dbz.interface';
+
+@Component({
+  selector: 'app-personajes',
+  templateUrl: './personajes.component.html',
+})
+export class PersonajesComponent {
+
+  @Input('dataParaElHijo')
+  personajesHijos: Personaje[] = [];
+
+}
+Asi funciona de fácil la comunicación padre a hijo.El hijo usará un decorador y el padre en el selector que llama al hijo declara un [key]="value.
+
+				VIDEO 61 TAREA CON INPUTS Y MÓDULOS
+
+Tarea a realizar.Recuerda que en Javascript todos los objetos son pasados por referencia asi que es el propio objeto y no su valor el que se pasa
+
+				VIDEO 62 @Output Y EventEmitter
+
+Si abrimos el main-page.component.html veré que la aplicación esta modularizada casi perfectamente con la excepción de que el componente <app-agregar> también inserta y realmente no debería hacerlo él,sino que simplemente debería emitir el evento con la data hacia el padre y ser el padre,el MainPageComponente el que lo añada al arreglo,pues es él el que tiene el arreglo.Asi que anulamos el envio mediante @Input de la propiedad que es un Array 'personajes' ya que vamos a enviarla al padre en vez de recibirla el hijo.
+El decorador @Output es usado cuando un componente hijo necesita emitir un valor(es un valor o un evento o ambos¿?) al padre.
+Es cuando tengamos la data cuando querremos emitir este evento(es decir,en la funcion agregar que ya tenemos definida en el hijo).La sintaxis para crear un evento personalizado con el decorador @Output es:
+
+*Nota @Output viene del core también y EventEmitter necesita un genérico.También hay que importar la clase EventEmitter del core de Angular.El evento custom será de tipo EventEmitter<T>:
+
+@Output()
+onCustomEvent: EventEmitter<T> = new EventEmitter<T>();
+* Ya puedo llamar a mi nuevo evento(con this).Es un Observable asi que podria subscribirme a otro evento con programación reactiva.
+
+Esto sólo es definir mi evento ,ahora hay que llamarlo con el método emit(value?: Personaje | undefined).Le puedo pasar un valor opcionalmente o simplemente emitirlo sin argumentos.Fijate que me va a dejar pasarle un Personaje o undefined ya que he definido el evento de ese tipo.Al final el código quedaría asi:
+
+*Defino mi customEvent
+@Output()
+onNuevoPersonaje: EventEmitter<T> = new EventEmitter<T>();
+
+agregar() {
+  
+  this.onNuevoPersonaje.emit(this.nuevo)
+}
+Lógicamente aún falta pasar el evento al padre desde el selector HTML que está en la template del padre.Fijate que es un evento asi que lo pasamos entre parentesis como cualquier evento en Angular.El evento llamará a una función que debemos definir en el padre y hay que pasarle el $event.
+
+* En el hijo emito un evento con un argumento opcional
+this.onNuevoPersonaje.emit(this.nuevo)
+
+*en la template del padre lo recibo hacia una funcion
+<app-agregar 
+    (onNuevoPersonaje)="agregarNuevoPersonaje($event)"
+    [personaje]="nuevo">
+ </app-agregar
+
+* fijate que en este caso $event se traducira en this.nuevo en la funcion
+agregarNuevoPersonaje( personaje: Personaje) {
+  console.log(personaje);
+  this.personajes[this.personajes.length]=personaje;
+  }
+}
+* hago lo que necesite con el valor,en este caso añadirlo al array.
+
+			VIDEO 63 BONUS:DEPURACIÓN DE ERRORES
+
+1ª: Puedo depurar la aplicacion,si no es algo muy complejo con el depurador que ya incluye las DevTools del browser Chrome.
+También se recomienda usar console.log para depuraciones sencillas.
+
+2ª: Para depuraciones más complejas se recomienda usar la keyword 'debugger;' de javascript:
+
+agregarNuevoPersonaje( personaje: Personaje) {
+  debugger; <- 
+  console.log(personaje);
+
+  this.personajes[this.personajes.length]=personaje;
+  }
+}
+* En cuanto llegue a esa linea se va a pausar 
+
+3ª: otra forma superútil es usar el depurador de Visual Studio Code.Lo primero es pulsar F5 para seleccionar el environment.Seleccionamos Chrome.Esto creará la carpeta .vscode y el archivo launch.json en ella:
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "pwa-chrome",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}
+* El único inconveniente es que nosotros no tenemos la aplicación en el puerto 8080 asi que lo cambio al 4200.Una vez cambiado presiono F5 de nuevo y deberia abrir una nueva ventana de incógnito en el browser con la app.
+* Desde ahora podré poner breakpoints,Angular también me ayudará a pasar el Typescript a Javascript
+* En cuanto cierre ese navegador de incognito se cerrará el modo depuración.De momento seguiremos con el depurador de las DevTools.
+
+					VIDEO 64 SERVICIOS
+
+Los servicios en Angular es una de las características más potentes que tiene y hace que al trabajar con ellos no sea necesario usar patrones como Redux.
+Esto es porque los servicios en Angular son manejados de una manera muy eficiente muy parecido a usar un Singleton(clase isntanciada de manera global en mi aplicación).
+Al conectarme a un servicio podré actualizar su información desde cualquier lugar de la aplicación.Empecemos a crear uno de manera manual primero,para el modulo/componente 'dbz' asi que creo la carpeta services en app/dbz/services.Esto creará un servicio sólo para este módulo.
+* Los servicios se pueden 'elevar' al nivel que quiera,es común ponerlos en la raiz pero se pueden ubicar donde se desee.
+
+Asi pues creo el servicio dbz.service.ts.De nuevo,todo en Angular es una clase asi que creo una llamada DbzService.Lógicamente llevará un decorador que la hará un Servicio y adicionalmente la exporto.Este decorador es @Injectable() y también viene del core.
+
+import { Injectable } from '@angular/core';
+
+@Injectable()
+export class DbzService{
+  constructor(){
+    console.log('Servicio inicializado');
+  }
+}
+
+* ningun módulo sabe que existe este servicio,asi que lógicamente el módulo encargado de esta zona tendrá que importar esta clase.Los servicios van en el array 'providers' del decorador @NgModule
+
+* en el dbz.module.ts
+@NgModule(
+...
+providers: [
+ DbzService
+],
+)
+
+Los servicios van a ser una única instancia de esa clase a lo largo del módulo en el que lo importe.
+* Sin embargo,no veré el console.log.Un servicio no va a crear la instancia mientras nadie lo requiera,asi que alguien debe solicitarlo.
+Despue de haberse creado va a ser la misma instancia para cualquier componente,servicio,pipe,...lo que sea que lo consuma(incluyendo otros servicios).
+Toda la data que tenemos hardcodeada,incluyendo el método que agrega un nuevo personaje debería ser un servicio y estar centralizado,asi que esto va a ser nuestro servicio lo que está en el main-component.ts.
+Los servicios se usan muchísimo en peticiones HTTP.Creo el constructor de la clase mainComponent:
+
+  constructor(
+    private dbzService: DbzService
+  ) {}
+}
+* IMPORTANTE: esta forma corta de crear propiedades en el constructor se conoce como una inyección de dependencias en Angular.Fijate que estoy injectando el servicio en el constructor de ese componente.
+Hacer esto hará crearse la instancia del servicio finalmente,pudiendo ver el log por consola.Esto implica que cualquier código que tenga en ese servicio ya está listo para usarse en este momento
+
+* IMPORTANTE: puedo hacer la prueba a injectar la dependencia en otro constructor y no veré el log Servicio inicializado dos veces,pues la instancia se creó en Singleton.No se creará más veces,sólo una vez esa instancia.
+
+		VIDEO 65 CENTRALIZAR EL ACCESO DE LOS PERSONAJES EN EL SERVICIO 
+
+Realmente el main component no debería tener el arreglo de personajes o un personaje hardcodeado ni siquiera el método para agregarlos.
+
+Los servicios son los lugares centrales para el acceso a la información,asi que la llevamos al servicio.Recuerda que el servicio es una simple clase con un decorador que permite injectarlo y además sólo podrá crearse una única instancia(tiene dos features terribles pues)
+Además,no debo permitir la manipulación de esos datos.El único lugar donde debo dejar que se manipulen es en el propio servicio,por ello el ámbito de las propiedades será private:
+
+@Injectable( ) <- injectable como propiedad en otra clase bajo Singleton
+export class DbzService {
+
+   private _personajes: Personaje[] = [
+        {
+          nombre: 'Goku',
+          poder: 14999,
+        },
+        {
+          nombre: 'Vegeta',
+          poder: 7499,
+        },
+      ];
+ 
+		get personajes(): Personaje[] {
+		  return [...this._personajes]; <- ojo, que va por referencia
+    }
+    constructor() {
+        console.log('Servicio inicializado');
+    }
+}
+* Es un standar usar _propiedad,aunque lo importante es que sea private para tener que usar métodos accesores getter y setter.También debo tener cuidado porque Javascript todo lo manda por referencia asi que no puedo enviar 'return this._personajes' debo enviar una copia.
+get personajes(): Personaje[] {
+  return [ ... this._personajes ];
+}
+* Esto no es obligatorio,pero si una buena práctica ya que rompe la referencia de Javascript
+
+* Fijate que todos los @Input y @Output anteriores ya no son necesarios y estos componentes ahora tendrán que hacerlo a través del servicio:
+*Ya no me vale esta manera,pues el padre no tiene esa propiedad más
+
+export class PersonajesComponent {
+
+  @Input('dataParaElHijo')
+  personajesHijos: Personaje[] = [];
+
+}
+ 
+* inyecto el servicio en el constructor y declaro un getter para el ngFor
+export class PersonajesComponent {
+  get personajes: Personaje [] {
+    return this.dbzService.personajes; 
+}
+constructor (private dbzService: DbzService){}
+
+}
+
+				VIDEO 66 MÉTODOS EN EL SERVICIO
+
+Es momento de crear nuestro primer método en el cual agregaremos los nuevos personajes.El orden en la clase Service es el mismo que en Java:
+propiedades
+getter & setter
+constructor () <- recuerda que un Servicio puede llamar a otro asi que puedo inyectarle otro.
+métodos de la clase 
+
+@Injectable()
+export class DbzService {
+   private _personajes: Personaje[] = [
+     {
+        nombre: 'Goku',
+        poder: 14999,
+     },
+     {
+        nombre: 'Vegeta',
+        poder: 7499,
+     },
+    ];
+    
+    get personajes(): Personaje[] {
+        return [ ... this._personajes ];
+    }
+
+    constructor() {
+        console.log('Servicio inicializado');
+    }
+
+    agregarPersonaje( personaje: Personaje ): void {
+        this._personajes.push( personaje );
+    }
+  
+Fijate que debo añadirlo a la propiedad no al getter,que se llama igual.Además,cualquier cambio en la propiedad será reflejado en el getter,pues el getter sólo accede a la propiedad.
+
+* En el agregarComponent ya no se usará el @Output ni se emitirá el evento más.En vez de eso se ejecutará el del servicio:
+
+export class AgregarComponent {
+
+  @Input('personaje')
+  nuevo: Personaje = {
+    nombre:'',
+    poder:0 
+  };
+  
+  // @Output() onNuevoPersonaje: EventEmitter<Personaje> = new EventEmitter<Personaje>();
+
+  agregar(): void {
+    if (this.nuevo.nombre.trim().length === 0) { return; }
+
+    // this.onNuevoPersonaje.emit(this.nuevo);
+    this.dbzService.agregarPersonaje(this.nuevo); <- LINEA IMPORTANTE!
+    this.nuevo = { nombre: '', poder: 0 };
+  }
+
+  constructor(private dbzService:DbzService) {}  
+
+Trabajar con servicios es mucho más fácil que la anterior forma con los decoradores @Input y @Output
+La ventaja de trabajar con servicios es que la lógica y el manejo de la información está centralizada.Se puede observar perfectamente que los servicios son superútiles y superpoderosos,como Son Goku y además fáciles de implementar.Se puede tener acceso y manejo a la data de forma muy sencilla
+
+					SECCION 6 DESPLIEGUES RÁPIDOS A PRODUCCIÓN
+
+En esta sección vamos a ver como hacer el build de una aplicación de Angular y desplegarla en Netlify.
+Lo más importante es entender que Angular no desplegará un montón de las dependencias que se usan al desarrollar(concepto de tree shaking o sacudir el árbol).
+
+				¿Qué veremos en esta sección?
+
+1-Generar build de producción
+2-Desplegarlo rápidamente
+3-Netlify
+
+Aquí aprenderemos como generar el build de producción de nuestra aplicación y la desplegaremos en la web rápidamente usando Netlify, el proceso de despliegue en otros servidores es virtualmente el mismo, tomar nuestra carpeta DIST (que contiene la aplicación con archivos HTML, CSS y JS) y desplegarla mediante FTP (preferiblemente sFTP) en el hosting deseado.
+
+				VIDEO 70 GENERAR BUILD DE PRODUCCION
+
+Siempre que se haga un build hay que asegurarse que la aplicación funcione perfectamente,sin warnings ni errores
+Para generar la version de produccion el comando es:
+>ng build --prod
+* Este comando puede optimizar la version de produccion
+>ng build --prod  --build-optimizer
+
+* Nota: --prod esta deprecado ya que ng build está ya configurado para el ambiente production,puedo simplemente no ponerlo o usar:
+>>ng build --configuration production  <- Investigar más
+
+Utilizar lazy load hará que la aplicación pese aún menos.Sea como sea,el resultado final será:
+
+Initial Chunk Files               | Names         |       Size
+main.0036d733cbdad4e641b3.js      | main          |  153.88 kB
+polyfills.382604f94de28bcd208b.js | polyfills     |   35.96 kB
+runtime.64dfc0d567095dcbf8e6.js   | runtime       | 1017 bytes
+styles.543a1a8ddf3b81237947.css   | styles        |  460 bytes
+
+                                  | Initial Total |  191.28 kB
+
+Recuerda que los polyfills son funciones o métodos que aseguran que la app funcione en cualquier navegador web.En styles.hash.css están todos los estilos y el runtime también es necesario 
+Angular al hacer el build también se encarga de que los archivos viejos cacheados en  el navegador sean sustituidos por los nuevos,es decir que comprueba el hashID y si no es el mismo carga la nueva versión.
+Nota: si el hashId del archivo coincide usa la versión cacheada.
+Nota: el index.html llama al runtime.hashId.js en una etiqueta script
+
+			VIDEO 71 DESPLIEGUE EN HOSTING PROVIDER NETLIFY
+
+Fernando provee el enlace a https://www.netlify.com/ donde puedo registrarme.
+Una vez me haya registrado simplemente debo arrastar la carpeta dist/01-bases .Se desplegará en cuestion de segundos al ser tan ligera.
+De todas formas lo más importante es entender que para servir una aplicación de Angular lo único que tengo que hacer es desplegar esa subcarpeta 01-bases que se creo en dist.

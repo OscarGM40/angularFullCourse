@@ -1,0 +1,614 @@
+					 Curso Angular 2021
+
+			SECCION 01	INSTALACIONES NECESARIAS					 
+
+Aqui https://gist.github.com/Klerith/607dd6bb60b5a70bc5e4d9c81ef6501e
+está todo lo necesario:
+1- Google chrome: si ya está instalado 
+2- Visual Studio Code: hay que instalarlo aunque es posible que ya lo tenga
+3- Postman: descargamos el Cliente de pruebas REST
+4- Mongo Compass:nos va a servir como cliente gráfico
+5- Git & GitHub: hay que crear una cuenta
+6- Node: hay que instalar node en el sistema 
+
+Se recomiendan los plugins Activitus Bar,Bracket Pair Colorizer 2,Material Icon y en relación al framework Angular:
+-Angular 10 Snippet de Mikael Morlund
+-Angular Language Service by Angular
+-Angular Inline by Nate Wallace ayuda con template literals
+-Auto Close Tag
+-Typescript by pmneo
+
+			INSTALAR ANGULAR CLI
+
+Para instalar la herramienta cliente de cónsola con node(sin sudo?¿):
+>>npm install -g @angular/cli	( o abrir como Admin en W10)
+
+El CLI me permitirá crear servicios,componentes,etc aunque primero aprenderemos como hacerlo sin él.
+Una vez lo haya instalado imprimo la version:
+>>ng --version
+			
+			SECCION 02 CONCEPTOS GENERALES
+
+Angular saca una versión cada 6 meses porque intenta mejorar(el peso del compilado,nuevas features,...)En teoría es bueno que se actualice tanto.
+1- Typescript viene a ser un superset de Javascript.Mejora o expande Javascript añadiendo nuevas features.Microsoft da soporte a Typescript,lo cual es algo importante.
+2- Typescript ofrece tipado estricto y flexible.Es importante que intente poner tipos a todo,a la devolución de funciones,declaración de variables,...
+3- Typescript mejora enormemente el Intellisense o completado de código al trabajar con interfaces,pues ofrecerá las propiedades o métodos pertinentes.Incluso podré distinguir entre propiedades opcionales y no opcionales(nombre? es opcional mientras que nombre no lo es).
+4- Permite la inyección de depencias y decoradores en Angular.Ambas son una de las caracteristicas mas fuertes de Angular.
+
+		MITOS
+
+Hay muchos mitos sobre Angular pero en realidad:
+
+Angular no es mejor que React,Vue o Svelte.
+Angular no es más ordenado 
+Angular no es complicado de aprender.
+Las aplicaciones de Angular son muy pesadas(esto es una tontería,ya que Angular y Rect compilan a un bundle y pesará 35k o 100k,etc...Con el lazy load(o carga perezosa) pesará incluso menos
+Angular no es SEO friendly(mentira,se puede hacer SSR con Angular Universal)
+Angular no soporta Redux (mentira,Redux es un patrón,si quieres lo implementas y si quieres no)
+
+			SECCION 03 INTRODUCCION A TYPESCRIPT
+
+¿Qué veremos en esta sección?
+
+Introducción a TypeScript
+
+Tipos básicos
+
+Objetos, arreglos e interfaces
+
+Funciones y sus argumentos
+
+Desestructuración de arreglos y objetos
+
+Importaciones y exportaciones
+
+Clases, constructores
+
+Tipos genéricos
+
+Decoradores
+
+Encadenamiento opcional
+
+La idea de esta sección no es hacernos expertos en TypeScript, pero sí irnos acostumbrando a la sintaxis y el tipado estricto de datos.
+
+Después de la sección, podrán ver con otros ojos TypeScript y enfocarnos en todo lo que nos puede brindar, en lugar de las barreras que nos puede poner.
+
+		VIDEO 12 INICIO DEL PROYECTO
+
+Me bajo el proyecto del enlace del video,lo renombro a 01-Intro-a-Typesctipt y hacemos el 'npm install'.El proyecto es un simple proyecto webpack.
+Puedo arrancarlo con la extensión npm,habilito los npm scripts y ejecuto el start o el debug.Deberá arrancar la app en localhost:8081.Sin embargo es mejor dedicar una consola entera para el comando
+
+		VIDEO 13 TIPOS BÁSICOS Y CONCEPTOS GENERALES
+
+Se nos ofrece un enlace a https://www.typescriptlang.org/docs/handbook/basic-types.html donde podemos ver los tipos básicos de TS.
+
+Los tipos básicos son string,number,boolean,any,object,array
+
+let nombre = 'Strider'; (let nombre: string) <- puedo ver si dejo el cursor como TS infiere el tipo string.
+
+Nota: si lo declara como constante no infiere el tipo, ya que no tendrá.Simplemente es un valor constante:
+const nombre = 'Strider'; (const nombre: "Strider") <- no hay tipado
+
+Volvamos al ejemplo anterior,pero ya con tipado:
+
+let nombre:string = 'Strider';
+nombre = 'Fernando'; <- puedo reasignar el valor de una variable let en TS
+nombre = 123; X<- pero no puedo cambiar de tipo
+
+Si quiero que una variable pueda cambiar de tipo tengo dos maneras:
+
+let hp: number | string = 95; <- o es número o es string
+
+Nota:para arreglar el problema de no ver el bundle.ts:
+Realmente el problema de que se vea ahí el index.ts es de la configuración de Webpack.
+
+en el webpack.config.js...
+
+const path = require('path');
+const webpack = require('webpack');
+ 
+module.exports = {
+    entry: './src/index.ts',
+    devtool: 'inline-source-map',
+    module: {
+        rules: [
+            {
+                test: /\.tsx?$/,
+                use: 'ts-loader',
+                exclude: /node_modules/
+            }
+        ]
+    },
+    resolve: {
+        extensions: [ '.tsx', '.ts', '.js' ]
+    },
+    output: {
+        filename: 'bundle.js',
+        path: path.resolve(__dirname, 'dist')
+    },
+    plugins: [ <- es esta zona extra
+        new webpack.SourceMapDevToolPlugin({
+            filename: "[file].map",
+            fallbackModuleFilenameTemplate: '[absolute-resource-path]',
+            moduleFilenameTemplate: '[absolute-resource-path]'
+        })
+    ]
+};
+Con esos cambios Chrome debería de mostrar ja el bundle.js en lugar del index.ts
+
+		VIDEO 14 ARREGLOS,OBJETOS E INTERFACES
+
+Los arreglos y los objetos también son considerados tipos básicos de TS,aunque no son tan básicos.
+
+Un arreglo no es más que una colección de elementos que en teoría tienen algo en común.Primero veamos que dice el intellisense.
+Nota:es muy importante usar el intellisense,recuerda que salta sobre el nombre de la variable.
+
+let habilidades = []; (intellisense: let habilidades: any[])
+
+*Puedo ver que es un arreglo de tipo 'any'.Debería tratar de evitar usar 'any' en Typescript,realmente
+
+let habilidades = ['Bash','Counter','Healing'] (intellisense: let habilidades: string[]) <- si puede TS le inferirá el tipo
+
+ya no podria meter un number o un boolean:
+habilidades.push(1) <- no va a dejar 
+
+Si necesitará que me acepte los tres tipos puedo hacerlo perfectamente:
+let habilidades: (boolean | string | numbre)[]=[...]
+Sin embargo esto no debería ser muy común.Lo más adecuado es que sea de un tipo y ceñirme a él:
+let habilidades: string[] = ['habilidad 1','habilidad 2','habilidad 3'];
+
+Fijate que Typescript da los errores en tiempo de escritura,antes de ser interpretado.Veamos como crear un objeto en TS  
+
+const personaje = {
+  nombre: 'Strider',
+  hp: 100,
+  habilidades: ['bash','counter','healing']
+}
+
+Esto esta bien en Javascript pero en Typescript se necesita crear una Interfaz y pasarsela al objeto,es decir,que los objetos deben ser de un tipo en concreto.No deben ser objetos anónimos como en Javascript.
+
+interface Personaje {
+  nombre: string;
+  hp: number;
+  habilidades: string[];
+  puebloNatal?: string;
+}
+*Ahora ya puedo decir que personaje es de tipo Personaje
+const personaje:Personaje = {...}
+
+IMPORTANTE:si bien ya sé que siempre se va a transpilar el TS a javascript objetos como las interfaces no van a ocupar peso,pues no existen en Javascript.Podría crear un millón de interfaces y seguiría transpilando a 0Kb y 0 lineas de código javascript.Simplemente son obviadas.
+
+		VIDEO 15 FUNCIONES BÁSICAS
+
+Hasta ahora hemos visto el tipado estático y los errores en tiempo de compilación,además de los tipos básicos e interfaces para los objetos.Es tiempo de ver las funciones
+
+function sumar(a,b) {
+  return a + b;
+}
+
+Esto perfectamente no tiene porque sumar números,puede concatenar strings o incluso sumar arrays.Veamos lo que dice intellisense:
+>> function sumar(a: any, b: any): any
+NOTA:vale la pena recalcar que a y b son argumentos obligatorios.
+Es aqui cuando se ven las ventajas de usar un tipado fuerte,ya que si sólo quiero sumar números mi función no debería poder sumar/concatenar strings
+
+function sumar (a: number, b: number) {
+    return (a + b).toLocaleString();
+}
+*Si no le paso retorno TS lo inferirá,en este caso a string
+
+const sumarFlecha = (a: number, b: number):number => {
+    return (a + b);
+}
+*Puedo usar funciones flecha,y especificar el retorno.
+NOTA:el tipo del retorno siempre se indica despues de la zona de argumentos
+
+function multiplicar(numero,otroNumero,base) {
+    return numero * base;
+    
+}
+const resultado2 = multiplicar(10,20);
+
+Si hiciera esto se va a traducir en 10 * undefined,ya que va a leer multiplicar(arg1,arg2) y estoy retornando arg1 * arg3 y será un undefined asi que 10 * undefined será NaN.
+Es por esto que hay que definir las propiedades como opcionales cuando se necesite.
+Not:aún necesitará más cambios,ya que no puede ir un argumento obligatorio despues de uno opcional:
+
+function multiplicar ( numero: number, base: number, otroNumero?: number):number {
+    return numero * base;
+} 
+
+Aunque tambièn podría iniciar base con un valor,sin embargo esto haria que 
+function multiplicar ( numero: number, otroNumero: number, base: number = 2):number {
+    return numero * base;
+}
+
+		VIDEO 16 FUNCIONES CON OBJETOS COMO ARGUMENTOS
+
+Imaginemos que queremos crear una función que cura a un personaje.Podría ser algo como esto:
+function curar(personaje, curarX ): void {
+
+    personaje.hp += curarX;
+    console.log( personaje ); 
+
+}
+*sin embargo,aqui vienen los problemas de Javascript,pues no sabemos como luce un personaje o si realmente tiene la propiedad hp,o si curarX es un objeto o un numero
+NOTA: si una función no devuelve nada se la debe catalogar como 'void' su retorno.
+Entonces empecemos creando la interfaz
+
+** EN Javascript se recomienda crear constantes porque son mucho más ligeras
+const nuevoPersonaje: PersonajeLOR = {
+ 
+interface PersonajeLOR {
+    nombre: string;
+    pv: number;
+    mostrarHp:() => void;
+}
+
+function curar( personaje: PersonajeLOR, curarX: number ): void {
+    personaje.pv += curarX;
+}
+
+const nuevoPersonaje: PersonajeLOR = {
+    nombre: 'Strider',
+    pv: 50,
+    mostrarHp(){
+        console.log(`Puntos de vida ${this.pv}`)
+    }
+}
+
+curar( nuevoPersonaje, 20);
+nuevoPersonaje.mostrarHp();
+
+Las interfaces son clases tontas,lo único que hace es asegurarse que se cumple lo que ella tenga definido.También ayuda a la documentación y al autocompletado.
+
+				VIDEO 17 TAREA
+
+IMPORTANTE: se recomienda crear tantas interfaces como sean necesarias,además recuerda que no pesan nada al transpilar a Javascript.
+
+interface Direccion {
+    calle: string;
+    pais: string;
+    ciudad: string;
+}
+
+interface SuperHeroe {
+    nombre: string;
+    edad: number;
+    direccion: Direccion;
+    mostrarDireccion: () => string;
+}
+
+const superHeroe: SuperHeroe = {
+    nombre: 'Spiderman',
+    edad: 38,
+    direccion: {
+        calle: 'Main St',
+        pais: 'USA',
+        ciudad: 'NY'
+    },
+    mostrarDireccion() {
+        return `${this.nombre} ${this.direccion.ciudad} ${this.direccion.pais}` 
+    }
+}
+
+const direccion = superHeroe.mostrarDireccion();
+console.log( direccion );
+
+No se recomienda para nada anidar objetos en una interfaz,mejor crear otra(relativo a direccion: Direccion <- nunca anidar ahí un objeto)
+
+			18 DESESTRUCTURACION DE OBJETOS
+
+ Imaginando que tengo un código parecido a este:
+ interface Reproductor {
+     volumen: number;
+     segundo: number;
+     cancion: string;
+     detalles: Detalles;
+ }
+
+ interface Detalles {
+     autor: string;
+     año: number;
+ }
+
+ const reproductor: Reproductor = {
+     volumen: 90,
+     segundo: 36,
+     cancion: 'Mess',
+     detalles: {
+         autor: 'Ed Sheeran',
+         año: 2015
+     }
+ }
+
+ console.log('El volumen actual es de: ', reproductor.volumen)
+ console.log('El segundo actual es: ', reproductor.segundo)
+ console.log('La cancion actual es: ', reproductor.cancion)
+ console.log('El autor actual es: ',reproductor.detalles.autor)
+ console.log('El año de la cancion es: ',reproductor.detalles.año)
+
+No es muy eficiente usar todo el rato reproductor.propiedad.Es aqui donde viene la desestructuración.
+La desestructuración no es más que extraer directamnente ciertas propiedades que me interesen de un objeto y crear variables con ellas.
+
+*No se recomienda usar desestructuración anidada!
+const { volumen:vol, segundo:seg, cancion, detalles:{autor,año } } = reproductor;
+
+*Se recomienda ir de nivel en nivel
+const { autor, año } = detalles;
+
+*Fijate que al desestructurar se puede renombrar cualquier propiedad
+console.log(vol,seg) <- ya solo queda imprimir en base a los nuevos nombres
+
+		VIDEO 19 DESESTRUCTURACION DE ARREGLOS
+
+La desestructuracion de arreglos es literalmente lo mismo que con los objetos,excepto que los argumentos son posicionales.
+
+const dbz: string [] = ['Goku','vegeta','Trunks']
+
+console.log(dbz[0]) <- logicamente puedo imprimir asi
+
+*Para desestructurar un arreglo lo hago con llaves cuadradas
+
+const dbz: string [] = ['Goku','Vegeta','Trunks']
+// SE USAN LLAVES CUADRADAS Y ARGUMENTOS POSICIONALES 
+// EL NOMBRE NO ES IMPORTANTE,SOLO LA POSICION
+const [ p1, p2, p3 ] = dbz;
+
+console.log('Personaje 1: ', p1)
+console.log('Personaje 2: ', p2)
+console.log('Personaje 3: ', p3)
+
+SI SOLO NECESITO EL ARGUMENTO 3 TENGO QUE USAR COMAS:
+
+const [ , , p3];
+console.log('Personaje 3: ', p3)
+
+// DEBIDO A QUE UN ARREGLO ES UN OBJETO TAMBIEN SE PUEDEN DESESTRUCTURAR ASI
+const db: string [] = ['Goku','Vegeta','Trunks']
+
+const {0:gk,1:veg,2:tr} = db; <- ojo ,que empiezan en 0
+console.log('Personaje 1: ', gk);
+console.log('Personaje 2: ', veg);
+console.log('Personaje 3: ', tr);
+
+Lo que permitiría no usar las comas y usar la posicion y tratarlo como un objeto:
+const {3: trunks} = dbz;
+
+		VIDEO 20 DESESTRUCTURACIÓN DE ARGUMENTOS
+
+En la zona de argumentos de una función se puede desestructurar perfectamente igual que en cualquier otra zona:
+
+*Puedo pasar de esto
+    productos.forEach( (producto) =>{
+        total += producto.precio;
+    })
+* a esto
+    productos.forEach( ({ precio}) =>{
+        total += precio;
+    })
+Si bien no es una gran mejora,si que me puede ayudar. 
+
+		VIDEO 21 IMPORTACIONES Y EXPORTACIONES
+
+En ECMAScript16 se incorporó aunque Typescript lo hacia desde mucho antes.La ventaja es que es la misma sintaxis.
+
+IMPORTANTE: para poder importar algo necesito exportarlo primero:
+ 
+export interface Producto {
+  desc: string;
+  precio: number;
+}
+
+Ya puedo importar la interfaz en cualquier otro archivo del proyecto.
+
+import { calculaISV, Producto } from "./ejercicios/06-DesestructurarArgumentos";
+
+Sin embargo hay un problemilla y es que al importar la funcion la ejecuta:
+
+Total: 500 <- este es el de el archivo del export!
+ISV: 75
+Total: 250
+ISV: 37.5
+
+IMPORTANTE: debo recordar que cuando importo algo ejecuto el archivo en el que tengo el export,con la excepción de las interfaces,pues transpilan a vacío.
+
+		VIDEO 22 CLASES BÁSICAS
+
+Las clases en Typescript son muy parecidas a las de Javascript.
+
+class Heroe {
+  private alterEgo: string;
+  public edad: number;
+  static nombreReal: number
+}
+
+La diferencia es que yo puedo declarar cada propiedad private,public o static.La diferencia entre estos modificadores de acceso está en la visibilidad o alcance.
+Private solo va a ser visible dentro de esa clase
+Public afuera de la clase también es visible
+Static voy a poder acceder al valor de la propiedad sin crear una instancia(Heroe.nombreReal)
+
+const ironman = new Heroe();
+ironman.edad=34;
+
+IMPORTANTE: si bien puede parecer que una clase y una interfaz de Typescript son iguales,no es asi.Las clases las puedo instanciar,las interfaces son solo para crear reglas de implementación,especificar propiedades,etc..
+Además una interfaz no compila a nada,mientras que una clase si que compila a algo en Javascript
+Tampoco podré crear getters y setters en una interface o definir métodos por completo,solo podria declarar que lleva uno pero no desarrollarlo,algo que si puedo hacer en una clase.
+
+* En una clase puedo desarrollar un método
+class Heroe {
+    private alterEgo: string;
+    public edad: number;
+    static nombreReal: number;
+
+    imprimirNombre () {
+        return this.alterEgo + " " + this.edad
+    }
+}
+
+*En una interfaz sólo puedo indicar que lleva ese método:
+interface Personaje2 {
+    alterEgo?: string;
+    edad?: number;
+    nombreReal?: number
+    imprimirNombre: () => string;
+}
+
+		VIDEO 23 CONSTRUCTORES EN TYPESCRIPT
+
+Debo recordar que la mayor parte del código de Typescript son validaciones y reglas que nosotros mismos estamos poniendo en nuestro código para escribir algo más limpio y más seguro.
+
+Cuando no haya un modificador de acceso todas las propiedades son públicas(poner public y no ponerlo es lo mismo en Typescript).
+NOTA:porque hasta ahora no podemos ver nada de la clase en consola si ya tiene propiedades definidas?Es porque solo están definidas.
+El constructor es un método que se va a llamar cuando creo una instancia de mi clase(cada vez que creo una):
+
+class Heroe {
+    public alterEgo: string;
+    public edad: number;
+    public nombreReal: string;
+
+    constructor(alterEgo: string,edad: number) {
+        this.alterEgo = alterEgo;
+        this.edad=edad;
+    }
+}
+NOTA: hay una forma mucho más corta que la tradicional ,se hace poniendo el modificador de acceso en el constructor:
+
+class Heroe {
+  constructor(public alterEgo: string){}
+} <- y ya está, no me seas asinto	
+
+class Heroe2 {
+    constructor(
+        public alterEgo: string,
+        public edad?: number,
+        public nombreReal?: string
+    ){}
+}
+
+const thor:Heroe2 = new Heroe2('Thortillo');
+Puto Typescript.
+
+			VIDEO 24 EXTENDER UNA CLASE
+
+En Angular veré que muchas clases pueden extender de otras.Extender una clase no es más que añadir funcionalidad o propiedades nuevas a una clase existente.También se pueden extender interfaces.
+
+ class PersonaNormal{
+    constructor(
+        public nombre: string,
+        public direccion: string,
+        ){}
+    }
+    
+    
+    class Heroe3 extends PersonaNormal{
+        constructor(
+            public alterEgo: string,
+            public edad: number,
+            public nombreReal: string
+    ){
+        super(nombreReal,'New York, USA');
+    }
+}
+
+De momento no hace falta conocer mucho más excepto que se hereda con extends y que se debe llamar al constructor de la clase padre en el constructor de la clase hija con super().
+En el momento que el constructor padre tenga parámetros como ahora hay que proporcionarlos(si no tuviera seria solo super() pero como tiene dos la clase padre hay que pasarselos)
+
+			VIDEO 25 GENÉRICOS
+
+El concepto de los genéricos es algo fundamental en Angular.Como programador muchas veces voy a tener que cambiar el tipo de dato de una respuesta o el retorno de una función.
+
+function queTipoSoy<T>(argumento: T){
+    return argumento;
+}
+
+let soyString = queTipoSoy('Hola mundo'); 
+let soyNumero = queTipoSoy( 100 ); 
+let soyArreglo = queTipoSoy( [1,2,3,4,5] ); 
+
+let soyExplicito = queTipoSoy<string>('Hola mundo');
+
+**Un tipo genérico puede ser cualquier tipo de dato que especifiquemos a l a hora de llamarlo(como en queTipoSoy<string>) o algo implicito inferido por TS.Especialmente con llamados HTTP lo usaremos mucho ya que con genéricos es sumamente sencillo.
+
+Nota: T se comporta como una variable que guardará el tipo que aún no sé cual será,pero me dará autocompletado,etc...Además en cuanto coga uno será ese tipo.Any es diferente,no es ningun tipo,puede mutar y no da autocompletado.
+
+		VIDEO 26 DECORADORES DE CLASES
+
+Los decoradores son superimportantes y son propios de Typescript.Javascript no los conoce,por ello,cuando se hace la transcripción a JS se crearán funciones extra,etc...
+
+En el material adjunto se provee un enlace a https://www.typescriptlang.org/docs/handbook/decorators.html#class-decorators
+Donde se explican los decoradores Typescript.
+
+Los decoradores sirven para cambiar las clases en el momento en que son definidas.No es propio de Angular,cualquier tecnología que use estos decoradores en el momento de compilar a JS extenderá internamente estas funcionalidades que estamos queriendo implementar.
+
+Angular usa bastante decoradores para cambiar las clases.Además,en Angular casi todo es una clase,lo cual conjunta con el uso masivo de decoradores.
+
+IMPORTANTE: para poder trabajar con decoradores hay que habilitarlo en el tsconfig.json:  "experimentalDecorators": true  
+Este archivo existe en Angular y hace exactamente lo mismo alli,que es configurar como quiero que trabaje Typescript en mi proyecto.
+
+function classDecorator<T extends { new (...args: any[]): {} }>(
+  constructor: T
+  ) {
+   return class extends constructor {
+      newProperty = "new property";
+      hello = "override";
+  };
+ }
+
+@classDecorator
+class MiSuperClase {
+   public miPropiedad: string = "ABC123";
+	  
+   imprimir() {
+     console.log("Hola mundo");
+  }
+ }
+
+console.log( MiSuperClase );
+
+class extends constructor {
+    constructor() {
+      super(...arguments);
+      this.newProperty = "new property";
+      this.hello = "override";
+     }
+}
+
+Lógicamente no aparece miPropiedad porque aún no se ha creado una instancia,ni tampoco puedo ver el método imprimir.
+RESUMEN: los decoradores se usan para añadir o extender funcionalidades.Angular los usa mucho para diferenciar si la clase es un componente,una directiva,un pipe
+
+			VIDEO 27 ENCADENAMIENTO OPCIONAL
+
+Nota: para poder usar CTRL + b en VSC tengo que estar en modo insertar.Para poder usar CTRL + AvPag ó RePag tengo que estar en modo normal.
+
+El signo de interrogación es bastante flexible en programación.En Typescript en una clase indica que la propiedad es opcional:
+
+interface Pasajero {
+  nombre: string;
+  hijos?: string[]
+}
+
+  const pasajero1: Pasajero = {
+    nombre:'Fernando'
+  }
+
+  const pasajero2: Pasajero = {
+    nombre:'Melissa',
+    hijos:['Natalia','Gabriel']
+		  }
+
+  function imprimeHijos( pasajero: Pasajero ): void {
+    const cuantosHijos= pasajero.hijos.length;
+    console.log( cuantosHijos );
+	  }
+
+*Sin embargo fuera de la clase evalua una propiedad y si no existe devuelve undefined o lo de la derecha:
+
+const cuantosHijos = pasajero.hijos?.length || 0;
+*(si no existe la propiedad hijos me devuelves 0)
+
+Si dejara pasajero.hijos.length sin el ? me dará error cuando la instancia no tenga la propiedad hijos pues dará undefined.
+Esto lo puedo ver yendo al bundle.js y poniendo un breakpoint.
+
+Nota:cualquier método que quiera usar en un 'undefined' va a desencadenar un error y tirar la aplicación abajo(undefined.length es un error que no aguanta Javascript lamentablemente).
+
+En algunos lugares le llaman el secure operator por razones obvias.

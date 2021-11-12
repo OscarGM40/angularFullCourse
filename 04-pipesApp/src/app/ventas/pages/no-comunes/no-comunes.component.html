@@ -1,0 +1,117 @@
+<div class="text-layout">
+  <h1>Pipes no tan comunes</h1>
+  <p>Pipes también incluidos en el CommonModules</p>
+</div>
+
+<div class="grid justify-content-center">
+
+  <div class="lg:col-6 md:col-9 sm:col-12">
+    <p-fieldset legend="i18nSelect Pipe" [toggleable]="true"
+    [collapsed]="false"
+    >
+      <p>
+        Saludos {{ nombre }}, es un placer
+        {{ genero | i18nSelect: invitacionObj }}
+        a nuestro evento.
+      </p>
+      <button
+        pButton pRipple
+        type="button"
+        label="Cambiar persona"
+        (click)="cambiarCliente()"
+        class="p-button-info p-button-raised p-button-rounded"
+      ></button>
+    </p-fieldset>
+  </div>
+
+  <div class="lg:col-6 md:col-9 sm:col-12">
+    <p-fieldset legend="i18nPlural Pipe" [toggleable]="!false"
+    [collapsed]="false"
+    >
+      <p>Actualmente {{ clientes.length | i18nPlural: clientesMapa }}</p>
+      <button
+        pButton pRipple
+        type="button"
+        label="Borrar un cliente"
+        (click)="borrarCliente()"
+        icon="pi pi-users"
+        class="p-button-warning p-button-raised p-button-rounded"
+      >
+        <p-badge value="Click here"></p-badge>
+      </button>
+      <button
+      pButton pRipple
+      type="button"
+      label="Añadir un cliente"
+      (click)="agregarCliente()"
+      icon="pi pi-users"
+      class="p-button-info p-button-raised p-button-rounded"
+      >
+      <p-badge value="Click here"></p-badge>
+    </button>
+    </p-fieldset>
+  </div>
+
+  
+  <div class="lg:col-6 md:col-9 sm:col-12">
+    <p-fieldset legend="Slice Pipe" [toggleable]="!false"
+    [collapsed]="false"
+    >
+    <b>Original</b>
+    <pre>{{ clientes }}</pre>
+    
+    <b>Slice:0:2</b>
+    <pre>{{ clientes | slice:0:2 }}</pre>
+    
+    <b>Slice:1:2</b>
+    <pre>{{ clientes | slice:1:2 }}</pre>
+    
+    
+    <b>Slice:2:3</b>
+    <pre>{{ clientes | slice:2:3 }}</pre>
+    
+    <b>Slice:0:5 sobre un String</b>
+    <pre>{{ nombre | slice:0:5 }}</pre>
+    
+    
+  </p-fieldset>
+</div>
+
+<div class="lg:col-6 md:col-9 sm:col-12">
+  <p-fieldset legend="Json Pipe" [toggleable]="!false"
+  [collapsed]="false"
+  >
+
+  <pre>{{ heroes | json }}</pre>
+  
+  </p-fieldset>
+</div>
+
+<div class="lg:col-6 md:col-9 sm:col-12">
+    <p-fieldset legend="KeyValue Pipe" [toggleable]="!false"
+    [collapsed]="false"
+    >
+    <ul>
+      <li *ngFor="let item of persona | keyvalue">
+        <b>{{ item.key |titlecase }} : {{ item.value}}</b>
+      </li>
+    </ul>
+    </p-fieldset>
+  </div>
+
+
+  <div class="lg:col-6 md:col-9 sm:col-12">
+    <p-fieldset legend="Async Pipe" [toggleable]="!false"
+    [collapsed]="false"
+    >
+    <pre>Retorno del Observable </pre>
+    <pre>{{ miObservable | async }}</pre>
+    <br>
+    <pre *ngIf="!(valorPromesa | async)">Resolviendo promesa</pre>
+    <pre>{{ valorPromesa | async}}</pre>
+    </p-fieldset>
+  </div>
+  
+
+  
+</div>

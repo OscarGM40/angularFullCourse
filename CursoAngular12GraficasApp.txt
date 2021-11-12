@@ -1,0 +1,204 @@
+						 SECCION 22 APLICACION DE GRAFICAS
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+1- Gráficas dinámicas
+2- Gráficas de Barra y Dona(circulares)
+3- Re-dibujar valores de gráfica
+4- Gráficas basadas en peticiones HTTP
+5- Componentes especializados para la re-utilización de gráficas
+Y más...
+
+Esta sección tiene por objetivo enseñarles a usar otra librería de terceros en Angular, para que comprendamos como mostrar de forma visual la data de nuestros componentes.
+
+				VIDEO 327-328 INICIO PROYECTO Y RUTAS
+
+Creo un nuevo proyecto y adicionalmente ya le instalamos la libreria ng2-charts: https://valor-software.com/ng2-charts/
+>npm i ng2-charts
+ 
+Fernando comenta que no hay porque pasar las rutas hijas con path:"" y children,podriamos pasarlas sin usar esto:
+
+const routes: Routes = [
+  {
+    path: '',
+    children: [
+      {
+        path: 'barra',
+        component: BarrasComponent,
+      },
+      {
+        path: 'barra-doble',
+        component: BarrasDobleComponent,
+      },
+      {
+        path: 'dona',
+        component: DonaComponent,
+      },
+      {
+Simplemente pasando path:"",component - path:"",component pero él recomienda crear un único path y en sus hijos meter todo
+
+Para las rutas simplemente creo una interfaz y una propiedad que sea un arreglo con lasrutas y se la paso en un *ngFor:
+interface MenuItem {
+  ruta:string;
+  texto:string;
+
+menu:MenuItem[]=[
+  ...
+]
+En la template:
+
+<ul class="list-group">
+  <li 
+    *ngFor="let item of menu" 
+    class="list-group-item"
+    [routerLink]="[item.ruta]"
+    routerLinkActive="active"
+    >{{item.texto}}</li>
+</ul>
+Por último en el app.component.html creo una fila con dos columnas de 3 y9 y meto este componente a través de su selector en la de 3.
+Fernando explica muy bien porque si bien puedo usar cualquier librería Javascript de gráficas es mejor usar ng2-charts pues está creada teniendo en mente el ciclo de detección de cambios de Angular
+
+				VIDEO 331 GRÁFICA DE BARRA
+
+Dado que ng2-charts depende de charts(que es la libreria pero en javascript) hay que instalar las dos:
+>npm i ng2-charts
+>npm i chart.js
+Los de la libreria recomiendan importar el modulo ChartModule en el app.module pero a mi me dio problemas(quizas por el lazy load).Los solucioné importandolo en graficas.module,tal como dice Fernando.Para el warning hay que permitir que use CommonsModule en el angular.json().
+
+			VIDEO 332 PERSONALIZANDO LA GRAFICA DE BARRAS
+
+Realmente personalizar una gráfica no es muy complejo,y lo mejor es mirar la documentación de la librería.Alli podré ver las opciones,o como cambiar las Label o el tipo de Chart.
+Dado que estamos en un entorno tipado usaremos interfaces como ChartType ChartDataSets para los sets de datos,ChartOptions para las opciones o chartLegend que es un boolean para ocultar la leyenda superior.
+Investigando un poco se pueden cambiar incluso los colores o el color al hacer hover del fondo o de sólo el borde:
+   { data: [65, 59, 80, 81, 56, 55, 40], label: 'Series A',backgroundColor:'#ed5f76',hoverBackgroundColor:"#ad5111",hoverBorderColor:"black",borderWidth:1 },
+Fijate que al decir que es un ChartDataSets me dará el autocompletado.
+
+				VIDEO 333 COMPONENTE PERSONALIZADO PARA MOSTRAR GRÁFICOS
+
+Angular(y React) son muy poderosos.Permiten crear componentes que estarán totalmente encapsulados y harán lo que se le programe.Asi pues,creemos un componente que permita mostrar gráficas de barras normales(verticales) u horizontales.
+<div class="row">
+   <div class="col-md-6">
+      <app-grafica-barra></app-grafica-barra>
+   </div>
+   <div class="col-md-6">
+      <app-grafica-barra></app-grafica-barra>
+   </div>
+</div>
+*Lógicamente ahora hay que mandar información personalizada para cada gráfica con @Inputs,pero puedo observar lo bueno que ha sido refactorizar y componentizar la gráfica ya que ahora solo hay que llamar a una etiqueta y me traigo una gráfica.Amazing.
+
+			VIDEO 334 FLEXIBILIZANDO EL COMPONENTE PERSONALIZADO Y MANDANDOLE DATA CUSTOM
+
+Fernando provee un recurso con otra Data.Fijate que al pasarle la data tengo problemas ya que en el constructor no ha recibido el valor del @Input del padre,pero si en el ngOnInit.
+
+ ngOnInit(): void {
+    if (this.horizontal) {
+      this.barChartType = 'horizontalBar';
+    }
+  }
+*Para trabajar con cualquier valor de un propiedad de entrada por @Input tengo que hacerlo en el OnInit,ya que en el constructor aun no está
+
+*La cosa cambia si esa data recibida va  a ser el valor de la propiedad(y no un bolean con el que trabajar a posteriori,como antes).Cualquier propiedad puede ser asignada con un valor con @Input desde el padre:
+
+@Input() barChartLabels: Label[] = [ ]; <-simplemente declaro la propiedad y el tipo.Ya me pasará el padre el valor.
+
+  <app-grafica-barra 
+      [horizontal]="true"
+      [barChartLabels]="proveedoresLabels"
+      [barChartData]="productoData"
+      ></app-grafica-barra>
+  </div>
+  <div class="col-md-6">
+    <app-grafica-barra
+     [barChartData]="proveedoresData"
+     [barChartLabels]="proveedoresLabels"
+    ></app-grafica-barra>
+Fijate que no es lo mismo asignar un valor a una propiedad por @Input que reasignar un valor(aqui si necesito el ciclo de vida).
+
+					VIDEO 335 GRAFICA DE DONUT | DONA
+
+Realmente es una gráfica sencilla.Basta implementar esto:
+
+ <div style="display: block">
+      <canvas baseChart
+        [data]="doughnutChartData"
+        [labels]="doughnutChartLabels"
+        [chartType]="doughnutChartType">
+      </canvas>
+    </div>
+* Puede observarse que es casi idéntica a la anterior.La diferencia estará en el DataSet que es un MultiDataset y es un arreglo de arreglos.El Type también cambiará,lógicamente.
+Adicionalmente se le puede pasar colores con la propiedad [colors]:
+  <canvas baseChart
+        [data]="doughnutChartData"
+        [labels]="doughnutChartLabels"
+        [chartType]="doughnutChartType"
+        [colors]="colors"
+        >
+Hay que definir esa propiedad,que es un arreglo de objetos con la propiedad backgroundColor(entre muchas otras que se pueden definir):
+
+  public colors: Color[]=[
+    {
+      backgroundColor:[
+        "#0075ED",
+        "#00BAf7",
+        "#00E0DB",
+        "#00F7AD",
+        "#00ED63",
+      ]
+    }
+  ]
+
+			VIDEO 336 GRAFICA DE DONUT MEDIANTE PETICION HTTP
+
+Para realizar este video Fernando deja un backend que levantaremos con json-server.Lo guardo desde el recurso en una carpeta aparte.
+Fijate que para hacer peticiones si me falla el auto-import vienen de @angular/common/http tanto el Modulo como la Clase a inyectar.
+Recuerda que un Observable no se resuelve hasta que se subscriben a él.
+
+  ngOnInit(): void {
+    this.gs.getUsuariosPorRedSocial()
+      .subscribe(data => {
+        this.doughnutChartLabels = Object.keys(data);
+        this.doughnutChartData = [...Object.values(data)];
+      })
+  }
+* Es realmente importante recordar que los Observable deben ser resueltos subscribiendome a ellos.
+Fijate que el spinner me daba problemas ya que tenia que usar una etiqueta <ng-template #ref>.Esta etiqueta es un simple contenedor,ni siquiera es un div.
+<div class="alert alert-danger" *ngIf="data.length === 0; else divGrafica"> <- no me deja pasar una referencia a un div,pero si deja esto:
+<ng-template #divGrafica> 
+  ... rest of code
+
+			VIDEO 338 CAMBIANDO LA DATA DE RETORNO DE LA PETICION MEDIANTE RXJS
+
+Realmente podemos hacer que la peticion regrese la data tal cual la necesitamos(dos arreglos de string y number).Para esto usaremos el operador map,que me permite retornar cualquier cosa.En vez de tratar la información tras la petición la trato antes,lo cual lo deja más organizado:
+  
+getUsuariosConDataCorrecta() {
+    return this.getUsuariosPorRedSocial()
+      .pipe(
+      delay(2000),
+      map((data) => {
+        return {
+          labels: Object.keys(data),
+          values: Object.values(data),
+        };
+      })
+    );
+Fijate que ahora será mucho más fácil trabajar con la data tras realizar la petición.Parece buena idea que mis servicios regresen la información tan 'masticada' como sea posible.Fijate también en el uso del operador 'delay' para retrasar un poco la petición.
+
+			SECCION 23 DIRECTIVAS PERSONALIZADAS DE ANGULAR
+
+Usualmente las directivas sirven para expandir funcionalidad en algun componente o algun elemento HTML.Realmente ya hemos trabajado con directivas,como por ejemplo mat-button,que toma un botón y lo transforma el estilo,su funcionalidad,etc... Todo esto se hizo solo por poner mat-button que es una directiva
+Trabajaremos con directivas personalizadas para errores de formularios y otro uso muy común será para directivas estructurales(como el ngFor o ngIf) como por ejemplo crear una tabla.
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- Directivas personalizadas
+2- Directivas estructurales personalizadas
+3- Manipulación del elemento del DOM que es host de la directiva
+4- Cambio del HTML y estilos del objeto DOM host.
+5- Y más
+
+El objetivo de esta sección es crear una directiva que nos ayude a pulir la parte de mensajes de validación de los formularios reactivos, es un ejemplo real y aplicado de una directiva personalizada funcionando.
+
+			VIDEO 342 INICIO PROYECTO DIRECTIVAS APP
+
+

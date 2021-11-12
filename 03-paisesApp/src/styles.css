@@ -1,0 +1,48 @@
+/* You can add global styles to this file, and also import other style files */
+.small-flag {
+  width: 50px;
+}
+
+html,
+body {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+   scroll-behavior: smooth;
+}
+
+body {
+   background-repeat: no-repeat;
+   height: 100vh;
+   background: #7f7fd5; /* fallback for old browsers */
+   background: -webkit-linear-gradient(
+      to top,
+      #91eae4,
+      #86a8e7,
+      #7f7fd5
+      ); /* Chrome 10-25, Safari 5.1-6 */
+      background: linear-gradient(
+         to top,
+         #91eae4,
+         #86a8e7,
+         #7f7fd5
+         ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+      }
+
+::-webkit-scrollbar {
+  width: 17px;
+}
+
+::-webkit-scrollbar-track {
+  background:  linear-gradient(0deg, rgb(163, 37, 65) 0%, rgb(45, 74, 107) 100%);
+}
+
+::-webkit-scrollbar-thumb {
+   background: lime;
+   border-radius: 30px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  box-shadow: 0px 0px 0px 100000vh rgb(153, 147, 135);
+}

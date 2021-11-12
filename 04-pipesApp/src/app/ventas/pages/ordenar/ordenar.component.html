@@ -1,0 +1,87 @@
+<div class="text-layout">
+  <h1>Pipes personalizados</h1>
+  <p>Pipes creados por {{ "el programador" | mayusculas: enMayusculas }}</p>
+</div>
+
+<p-toolbar>
+  <div class="p-toolbar-group-left">
+    <button
+      pButton
+      pRipple
+      (click)="toggle()"
+      label="Cambiar a mayúsculas/minusculas"
+      class="mr-1 p-button-danger"
+    ></button>
+  </div>
+
+  <div class="p-toolbar-group-right">
+
+    <button
+      pButton
+      pRipple
+      icon="pi pi-sort"
+      label="Por nombre"
+      (click)="cambiarOrden('nombre')"
+      class="mr-1 p-button-warning"
+    ></button>
+
+    <button
+      pButton
+      pRipple
+      icon="pi pi-sort"
+      label="Vuela"
+      (click)="cambiarOrden('vuela')"
+      class="mr-1 p-button-success"
+    ></button>
+
+    <button
+      pButton
+      pRipple
+      icon="pi pi-sort"
+      label="Por Color"
+      (click)="cambiarOrden('color')"
+      class="mr-3 p-button-help"
+    ></button>
+  </div>
+</p-toolbar>
+
+<div class="grid mt-2">
+  <div class="col">
+    <p-table [value]="heroes | ordenar:orderBy">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Vuela</th>
+          <th>Color</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-heroe>
+        <tr>
+          <td>{{ heroe.nombre }}</td>
+          <td>{{ heroe.vuela | vuela | titlecase }}</td>
+          <td>{{ heroe.color | color }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<div class="card">
+  <h1 class="text-white text-center ">Sortable Table de PrimeNG</h1>
+    <p-table [value]="heroes2">
+        <ng-template pTemplate="header">
+            <tr>
+                <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre"></p-sortIcon></th>
+                <th pSortableColumn="vuela">Vuela <p-sortIcon field="vuela"></p-sortIcon></th>
+                <th pSortableColumn="color">Color <p-sortIcon field="color"></p-sortIcon></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-heroe>
+            <tr>
+                <td>{{ heroe.nombre }}</td>
+                <td>{{ heroe.vuela | vuela | titlecase }}</td>
+                <td>{{ heroe.color }}</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

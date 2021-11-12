@@ -1,0 +1,774 @@
+					SECCIONES 24-25 Y 26 SISTEMA LOGIN Y REGISTER COMPLETO
+
+  SECCION 24 BACKEND
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+1- Fundamentos de Node
+2- REST Services
+3- JWT
+4- MongoDB - Mongo Atlas
+5- Express framework
+6- Express validator
+7- CRUD
+8- Validaciones
+9- Modelos de base de datos
+10- Encriptar contraseñas
+11- Y más...
+
+Es una sección donde no tocaremos nada de Angular, pero durante algunos videos hago las referencias para que vayamos pensando como integrar todo esto con Angular.
+Eventualmente desplegaremos nuestro backend a producción para que aprendamos como realizar todos esos pasos, pero será en secciones más adelante en el curso.
+
+				VIDEO 357-358 INICIO PROYECTO + INTRO A NPM
+
+Creamos una app Node con npm init -y.En el siguiente video vemos como usar nodemon(siempre instalarlo en global).Fijate que tiene varias opciones,incluso parece que vale para scripts Python(diría que cualquier cosa interpretada, como pm2).
+También debo configurar el package.json,los scripts.Fijate que normalmente tendré nodemon en el host de manera global asi que diría que no tengo que instalarlo en el proyecto(confirmado,no tengo porque instalarlo,ya que uso el de el sistema)
+
+Fernando opta por crear dos scripts,uno para nodemon en dev y otro para node en prod:
+
+ "scripts": {
+    "dev": "nodemon -V index.js",
+    "start": "node index.js"
+  },
+* ¿Es malo dejar nodemon para producción?Diria que al usar pm2 ya no entra ni node ni nodemon en juego.Diría también que deja el 'npm start' porque vamos a usar Heroku y lo pedirá él.
+
+						VIDEO 359 INSTALAR DEPENDENCIAS
+
+Fernando usa y recomienda estas librerias al crear un backend:
+>npm i bcryptjs cors dotenv express express-validator jsonwebtoken mongoose
+
+IMPORTANTE recalcar que bcrypts encripta usando hash de una sola via,con lo que no puedo desencriptarlas( y siempre serán diferentes aunque el origen sea el mismo).Cors es necesario para aceptar peticiones de otros dominios.
+NOTA: siempre puedo instalar una version en concreto con npm i paquete@version 
+>npm i express@4.17 <- si tuviera problemas alguna vez en algun proyecto me instalo la version original.
+
+					VIDEO 360 CONFIGURAR SERVIDOR EXPRESS
+
+Fernando configura un servidor muy básico.Recuerda que los primeros 1024 puertos están reservados para el sistema operativo.También recomienda crear la carpeta controllers,ya que los controladores pueden crecer mucho.
+Algunos llaman al archivo xxx.controller.js y xxx.routes.js(como hace Angular) pero Fernando tiene suficiente con la abstración creada por las carpetas.
+Fijate que es buena idea dar un tipado aunque esté en Javascript lo puedo hacer:
+const { response } from "express";
+router.post("/ff", (req,res=response) => {}
+* Como estoy en Javascript no me traigo la interfaz Response sino la constante 'response' y además tengo que asignarla por defecto con el operador '='(res=response) en vez de usar el tipado de TS
+
+En estas dos lineas llamar al método Router() y config() hace cargar la configuración por defecto(la cual es suficiente)
+const { router } = require("express").Router() <- esto configura el objeto router
+require("dotenv").config() <- de nuevo la configuración por defecto es suficiente
+
+			VIDEO 365 SERVIR UNA PAGINA HTTP DESDE EL SERVIDOR(ZONA PÚBLICA)
+
+Realmente vamos a servir un index.html desde el servidor.Fijate que lo único que tengo que hacer es definir con otro middleware la zona públicsa  crear un index.html(siempre va a ser la carpeta 'public' esta zona).Cualquier persona lo podrá ver ya que estoy definiendo la carpeta de archivos públicos realmente:
+
+* En cuanto declare esta zona(algo que debería hacer siempre,entiendo yo) express ya puede leer de esa carpeta 'public'.
+app.use(express.static(path.join(__dirname,'public')));
+En esta carpeta 'public' puedo crear hojas de estilos,etc y linkarlas:
+
+					VIDEO 366 CAMPOS OBLIGATORIOS-VALIDACIONES
+
+Queremos que el usuario mandé obligatoriamente un email,username y un password.Usaré la archi-conocida librería express-validator,y debo olvidarme ya del método body,pues ha cambiado.Ahora usaré la función check en las rutas que simplemente revisa por lo que le diga.
+Si hubiera errores creará un objeto con ellos,el objeto validationResult( fijate que es el resultado de la validacion simplemente)
+Este objeto se consume en el controlador,asi que el check es para las rutas y el validationResult para los controladores.
+IMPORTANTE: siempre puedes revisar las apps de Fernando,pero debo memorizar esta forma nueva.Ejemplo:
+*En una ruta
+router.get("/home", [ check("username","Username requerido").not().isEmpty() ], userController); <- simplemente es cambiar body por check.
+*En su controlador
+exports.userController = (req,res) => const errors = validationResult(req); <- fijate que lleva la request por argumento,es lógico ya que necesita la petición para ver los errores.IMPORTANTE memorizar que necesita la request.Será un arreglo de errores.
+De nuevo me toca a mi crear la lógica,es algo que dejaron en manos del desarrollador los de la librería.
+*Si el array no esta vacio termino la peticion e informo de lo necesario(fijate en el uso de mapped()):
+
+if(!errors.isEmpty()){
+  return res.status(400).json({
+   ok:false,
+   errors: errors.mapped() }) <- un 400 de BadRequest me vale,fijate que me proporcionan una funcion prebuilt.
+
+			VIDEO 367-368 CUSTOM MIDDLEWARE
+
+Debido a que ha cambiado un poco esta libreria puedo hacer ya cosas como esta:
+router.post("/new", [
+  check("name").notEmpty().withMessage("El name es requerido")
+    .isLength({min:3}).withMessage("Nombre:Minimo 3 caracteres")
+], controlador);
+
+Dado que hemos repetido código como por ejemplo al validar si vienen errores en los controladores vamos a crear un middleware.Fijate que los middeware se ejecutan de manera secuencial:
+  check("name").notEmpty().withMessage("El name es requerido")  <- primero mira que no venga vacio
+     .isLength({min:3}).withMessage("Nombre: minimo 3 caracteres")  <- despues que tenga minimo 3 caracteres
+     .isLength({max:20}).withMessage("Nombre: máximo 20 caracteres"), <- y despues de tenga menos de 21
+* Esto es importante,ya que si ponemos nuestro middleware al final tendremos acceso a todos los errores.
+
+El middleware no puede ser más sencillo:
+
+exports.validarCampos = (req=request, res=response, next) => {
+
+   const errors = validationResult(req);
+
+   if (!errors.isEmpty()) {
+      return res.status(400).json({
+        ok:false, 
+        errors:errors.mapped()
+      })
+   }
+   next();
+}
+* Es coger la lógica anterior y copiarla,adicionalmente hay que dejar pasar con next().Va en los routers,despues de todos los checks(fijate que daba igual donde,simplemente tengo acceso a la res y la req,punto).
+IMPORTANTE: Un middleware no es más que una simple funcion que recibe la request,la response y el next.Fijate que ha quedado espectacular,es mucho más importante y fácil de lo que pensaba este middleware.Ningun backend debe ir sin validaciones.
+
+					VIDEO 370-371 CONECTAR CON MONGO ATLAS
+
+Fijate que me puedo crear un usuario y o bien generar una password o usar una mia y meter ambos en la cadena de conexión.NO tengo porque limitarme a ese único usuario que tengo.Crearé una tercera password con Epiphone_XX_XXXX similar a la dificil que ya tengo.Usuario el mismo que GitHUb.
+Recuerda que el mongoose.connect es una Promise, asi que o bien uso async await o .then().catch().
+
+exports.connectDb = async () =>{
+   try {
+      await mongoose.connect(process.env.MONGO_URI,{ })  <- ojo con esto
+      console.log(`Conectado a ${mongoose.connection.name}`);
+   } catch (error) {
+      console.log(error)
+      throw new Error('Error en la inicializacion de la BD')
+   }
+}
+* IMPORTANTE: fijate que interesante esto 'await mongoose.connect() y despues el console.log.Si el await falla va a salir por el catch asi que el console.log esta perfecto ahi,pues si conecta pasa al console.log,etc.Fijate como no es necesario rescatar el resultado del await ni ostias.Te queda mucho willy.
+
+
+
+
+
+
+CON MYSQL: si quisiera hacer algo rápido con MySQL puedo importar el modulo 'mysql2'.Ojo,que no es un ORM,es sólo para hacer Queries rápidamente:
+const mysql2 = require("mysql2") <- si quisiera un ORM usar Sequelize
+
+*Ya no es una promesa,es solo la definición de una conexión.
+
+const connectSQL =  () => {
+  try{
+    t mysql2.createConnection({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_DATABASE
+  })
+  console.log("Conectado a la base de datos)
+  } catch(error){
+    console.log(error)
+   throw new Error("Error en el conexionado a la BD")
+}}
+
+En las variables de entorno del .env:
+DB_HOST=localhost
+DB_USER=root
+DB_PASS=passworddificil
+DB_DATABASE=loginAngularBasicCourse
+El modulo se instala con npm i mysql2 lógicamente.
+
+Y para hacer una query usaria connectSQL.query("Insert into ...").Como puedo ver ni estoy mapeando la clase ni nada,pero para hacer dos queries rápidas es genial.Admite consultas parametrizadas y prepared statements anti-inyecciones con el método con.execute(ver doc).
+
+						EXTRA -- USANDO ORM SEQUELIZE PARA NODE --
+
+Dado que mysql2 se queda pequeño para algo serio,existe Sequelize.Sequelize es un ORM basado en Promises para conectar Node con Postgres,MySQL,MariaDB, SQLite y Microsoft SQL Server. Se caracteriza por transacciones sólidas,relaciones,carga ansiosa y perezosa.Necesita de Node10+.
+
+						INSTALAR Y CONECTARSE AL ORM
+
+Para instalarlo necesitaré dos drivers,el de el ORM y el de el Gestor:
+> npm install sequelize
+    +
+>npm i pg pg-hstore #Postgres
+>npm i mysql2 # mysql2
+>npm i mariadb #mariadb
+>npm i sqlite3 #sqlite
+>npm i tedious # Microsoft SQL Server 
+
+Para conectarme a la BD,tengo que crear una instancia de Sequelize.Esto se puede hacer en una única connection URI o pasando esos argumentos de uno en uno en el constructor:
+const {Sequelize} = require("sequelize";
+
+#Option 1 con la URI
+const sequelize = new Sequelize("sqlite3::memory") ; //para sqlite
+const sequelize = new Sequelize("postgres://user:password@domain:5432/dbname") // para Postgre
+#Opcion 2 con el constructor
+const sequelize = new Sequelize("database","username","password",{
+  host:"localhost",
+  dialect: /* one of 'mysql' | 'mariadb' | 'postgres' | 'mssql*/ <- ojo que el ultimo es Microsoft SQLServer
+
+Debo usar los métodos authenticate y close(ambos asincronos) para comprobar si me he conectado o cerrar la conexion:
+* Ejemplo de conexión a mysql
+exports.connectToSequelize = async () => {
+   try {
+      const sequelize = new Sequelize(process.env.MYSQL_DB,"root",process.env.MYSQL_PASS,{
+         host:"localhost",
+         dialect:"mysql"
+      })
+      await sequelize.authenticate();
+      console.log(`Conectado a ${process.env.MYSQL_DB} mediante ORM Sequelize`)
+   } catch (error) {
+      console.log(error)
+   }
+}
+ 
+					CREAR MODELO CON SEQUELIZE
+
+Hay dos formas de definir un Modelo en Sequelize:
+1ª: llamando a sequelize.define(modelName,attributes,options)
+2ª: Extendiendo la clase Model y llamando al init(attributes,options)
+*Llamar a sequelize.define en realidad por detrás llamará a Model.init asi que es indiferente cual usar.
+IMPORTANTE: siempre voy a necesitar los DataTypes para definir el tipo de datos de las columnas:
+const {Sequelize,DataTypes} = require("sequelize");
+const sequelize = new Sequelize("sqlite::memory"); <- entiendo que ya tengo esto en la funcion?? Donde consigo esto?
+
+* FORMA CON DEFINE
+const User = sequelize.define('User',{
+  username: {type: DataTypes.STRING,allowNull:false}, <- en vez de required es allowNull,ojo que required a true es allowNull a false
+  lastname: {type:...
+},{ tercer argumento para las opciones }
+* Fijate que éste recibio la conexion.
+
+* FORMA EXTENDIENDO DE MODEL Y USANDO INIT
+const { Sequelize, DataTypes, Model } = require("sequelize");
+const sequelize = new Sequielize("sqlite::memory");
+ 
+class User extends Model {};
+User.init({
+  firstName: {type: DataTypes.STRING,allowNull:false},
+  lastName: {...}
+},{
+  sequelize, // con esta forma le tengo que pasar donde guardé la conexión,puesto que no he hecho un sequelize.define
+  modelName:'User', // y también le tengo que dar el nombre del modelo.
+
+Igual que MOngoose,el modelo se llamará en singular(User) pero se creará la tabla Users).Se puede parar esta pluralización con freezeTableName: true como opcion.Incluso puedo proveer el nombre de la tabla con tableName: 'Cualquier nombre'.Ambas opciones van en el argumento 'options'.También puedo quitar los timestamps(los pone por defecto) con timestamps:false.Puedo darles otro nombre o elegir solo uno de ambos.
+
+DATATYPES: tengo los tipos de datos(todos constantes en mayúsculas) 
+STRING = varchar(255)
+STRING(2005) = varchar(2005)
+TEXT = text
+BOOLEAN
+INTEGER
+BIGINT
+BIINT(11)
+FLOAT
+FLOAT(11)
+FLOAT(11,10) = para decimales era ?
+REAL
+DOUBLE
+DECIMAL
+DATE
+UUID
+Y más.Fijate en DATE y UUID lo interesantes que son.
+TIPOS PARA LAS COLUMNAS:
+campoUnico: { type: DataTypes.STRING, unique: true} // unique para los unicos
+campoId : { type: DataTypes.STRING, primaryKey : true} // clave primaria
+campo AI: {type: DataTypes.INTEGER, autoIncrement: true} ,//campo autoincremental
+otherID:{ type: DataTypes.INTEGER, references: {model:'Sales',key:'salesId'} <- columna llave foranea que apunta a la llave salesId
+* Sequelize siempre va a crear una columna llamada 'id' aunque no se lo diga,igual que hace Mongoose!
+ 
+SINCRONIZANDO EL MODELO Y TIRAR TABLAS UPDATE,CREATE AND DELETE: 
+Puedo usar la funcion de tipo Promise Model.sync para sincronizar el Modelo y la Tabla.Como opciones puedo tirar la tabla antes o tratar de que Sequelize encuentre los cambios en el Model y haga una query actualizando la tabla(drop column,alter column,...):
+await User.sync() // solo sincroniza
+await User.sync({force:true{) //crea la tabla,si existia la tira antes
+await User.sync({alter:true}) // si el modelo cambió,actualiza la tabla del gestor
+* Puedo también sincronizar todos los modelos de una vez en vez de tabla por tabla:
+await sequelize.sync() <- solo hay que pasar la conexion en vez de una tabla
+* Puedo tirar una tabla o todas de la misma forma:
+await User.drop() <- tira la tabla users
+await sequelize.drop() <- tira todas las tablas
+
+			OPERACIONES SOBRE EL MODELO
+
+En cuanto defina un modelo ya puedo realizar operaciones CRUD en los controladores.Sequelize soporta estas funciones:
+Model.create(object) //crear un registro
+Model.findByPk(id) // busca por id
+Model.findAll() // trae todos,parece que también puedo usar getAll
+Model.findAll({where:{title:""}}) //busca todos los registros que coincidan con ese filtro
+model.findOne({where: {name:"jane}}) //busca el primero que encuentre con esa condicion
+Model.getAll() //trae todos los registros de esa tabla
+Model.update(data,where:{id:id{) //actualiza en ese id con esa data
+Model.destroy(where:{id:id}) //elimina ese registro
+MOdel.destroy(where:{}) // si elimino sin filtrar elimino todos
+Fijate que {where:...} siempre va dentro de un objeto.Esto es algo básico,realmente.Hay muchos más.
+
+Fijate que puedo crear un usuario y guardarlo mas tarde,realmente puedo hacer lo mismo que con Mongoose.
+const user = new Model(req.body) <- también podia haber usado Model.build(),recomiendan esto último en su doc
+await user.save() * Tiene una pinta espectacular este ORM
+
+CREATE MODEL (BUILD + SAVE == CREATE)
+Para crear un objeto puedo crearlo primero con build(esto solo crear un objeto)  y despues guardarlo en la BD con save:
+const jane = User.build({name:"jane"});
+await jane.save(); <- es igual que mongo,una Promise
+* Build es de los pocos métodos que no son una promesa en Sequelize.Hay un atajo para no hacerlo en dos pasos
+const jane = await User.create( {name:"jane"} ) <- build + save se pueden resumir en create,que es otra Promise
+
+
+								VIDEO 371 CREAR MODELO DE BASE DE DATOS en ORM MOMGOOSE
+
+Una vez conectado a mi ORM debo crear un Modelo que define como serán los objetos que inserte a una tabla o documento.Es como una clase Tipo,Referencia o Modelo.Necesitaré el método model y la clase Schema al trabajar con el ORM mongoose.
+
+const { Schema, model } = require("mongoose");
+const UsuarioSchema = Schema({
+  name:{type:String,required:true},
+  email:{type:String,required:true,unique:true},
+  password:{type:String,required:true},
+})
+
+module.exports = model("Usuario",UsuarioSchema);
+
+				VIDEO 372 CREAR UN USUARIO
+
+Fijate que ya sé a ciencia cierta que voy a recibir un username,email y password válidos pues hemos validado con expres-validator y su middeware check y sacado a un custom middleware el manejo de errores que devuelve validationResult(req) no dejando pasar la petición al controlador.
+
+Fijate en esto tan interesante.NO debo devolver los errores en los catch,porque estoy informando del error.Si que debo imprimirlos por consola,pero no mandarlos(parece importante esto y acertado).En los próximos días mira a ver que suelo devolver en el backend(no mandes el error al frente).
+
+catch (error) {
+     console.log(error) <- imprimir si,pero no mandarlo.
+     return res.status(500).json({
+        ok:false,
+        msg:"Por favor hable con el administrador"
+     })
+
+Fijate que puedo usar las funciones sincronas para hashear la password que me viene en el body:
+      const salt = bcrypt.genSaltSync(10);
+      usuarioDB.password = bcrypt.hashSync(password,salt)
+No hay ningun motivo por el que tenga que usar promesas,puedo usar estas funciones sincronas.Realmente hay muchas formas de hacer lo mismo
+
+				VIDEO 374 GENERAR JSONWEBTOKEN
+
+Realmente no tengo porque redirigir a un usuario que se registra en una app al login.Puedo perfectamente darle un token ya en el registro y redirigirle a la aplicacion.Esto además es un comportamiento que se usa mucho y que Fernando recomienda.
+Fijate que un jsonwebtoken consta de tres partes, el header y el body y una firma para verificar que el header y el payload coinciden.
+
+Tengo que tener mucho cuidado con la información que guardo en un token,porque a diferencia de la password(que es encriptadad con un hash de una sola via) el payload o body de un token se puede reconstruir.
+
+Aunque es fácil desencriptarlo,aún necesitarían la firma,asi que sigue siendo bastante seguro.Fijate que el paquete que estamos usando es un poco viejo y aún no trabaja con Promises, sigue usando callbacks.
+
+Dado que a Fernando no le gusta que sea código síncrono,vamos a crear una nueva Promise la cual retornamos inmediatamente(return new Promise().
+Fijate que lo que mande en el resolve es lo que me devolverá el .then() o el await cuando llame a esta promesa:
+
+exports.generateToken = (uid,name) => {
+    const payload = { uid, name };
+    * retorno la promesa inmediatamente.Realmente puedo mandar lo que quiera en el resolve o en el reject
+    return new Promise( (resolve, reject) => {
+        jwt.sign(payload,process.env.JWT_SIGNATURE,{
+            expiresIn: "24h"
+        },(err,token) => {
+            if(err) {
+                console.log(err)
+            }else{
+                resolve(token)
+            }
+        })
+    })
+ }
+
+Realmente me gusta esta forma,pero diría que no era necesario crear una Promise,pues no falla con código síncrono.
+Fijate que la aplicación jwt.io realmente no comprueba la signature bien.Es un BUG que nunca han arreglado,ya que pones cualquier cosa y dice que es válida,pero en un backend va a chocar.
+El backend siempre va a revisar que el token que se le envia lleva la signature adecuada,asi que necesitan la signature para hackear esa peticion
+
+							VIDEO 377 LOGIN DE USUARIO
+
+El login de usuario es sumamente sencillo,lo único que tiene de complejo es comprobar la contraseña.Para ello puedo usar los métodos compare(pass,hashedPass) o compareSync(pass,hashedPass).Ambos siempre van a comparar una contraseña como primer argumento contra la hashedPass.
+Si uso compare tengo que esperar,pues es una promesa:
+await bcrypt.compare(pass,db.pass)
+Si uso compareSync obviamente no:
+const validPass = bcrypt.compareSync(pass,hashedPass);
+
+  const dbUser = await UsuarioMongoose.findOne({ email });
+  const dbUser2 = await UsuarioSQL.findOne({ where: { email } });
+ ....
+IMPORTANTE:hay desarrolladores que guardan el token en el sessionStorage,y le dan una vigencia infinita,así cuando el usuario cierre el navegador se elimina y debe logearse cada vez que quiera volver a entrar.Esta es una solución,otra es renovar el token,la cual vamos a ver en los siguientes videos.
+
+					VIDEO 378 RENOVAR Y VALIDAR EL TOKEN
+
+Fijate que el usuario siempre va a tener un token,ya sea porque se registró o porque se ha logeado.De alguna manera queremos mandar ese token(el token se debe mandar en los headers por seguridad),asi que queremos mandar el token cada vez que el usuario refresque el navegador,cambie de ruta,insertar algo en la BD,...
+Realmente puedo disparar esta peticion de renovacion de token donde y cuando desee.
+Asi pues creo dos headers para ambos tokens(mongo-token y mysql-token) y los rescato en el controlador:
+
+   const mongoToken = req.header("mongo-token");
+   const mysqlToken = req.header("mysql-token");
+
+Si no los mandara el usuario en la peticion a esta ruta por GET puedo devolver un 401 de Unauthorized (que es más apropiado que un 403,pues el 403 es acceso denegado o Forbidden).
+
+Si si llegan hay que decodificar el token para acceder a su payload,más concretamente queremos acceder al id.Pan comido:
+
+  const {uid,name} = jwt.verify(mongoToken,process.env.JWT_SIGNATURE); <-includo puedo desestructurar ese payload,ya que sé lo que tiene.
+
+Ahora viene una pregunta complicada.Tengo el id,pero como hago para pasarlo del middleware al controlador?
+Dado que todo pasa por referencia en Javascript,el objeto req (o cualquiera) es el mismo en todos lados,asi que puedo crear cualquier propiedad:
+
+req.uid= uid; 
+req.name=name;
+
+						VIDEO 379 GENERAR NUEVO TOKEN
+
+Dado que ya tengo en req.uid y req.name lo necesario para renovar un nuevo token lo hago y lo devuelvo:
+
+
+exports.revalidarToken = async (req, res = response) => {
+   // esto ya viene del middleware que hay en la ruta
+   const { mongoid,name,mysqlid } = req;
+   //vuelvo a crear dos tokens
+   const Mongotoken = await createToken(mongoid,name);
+   const MYSQLToken = await createToken(mysqlid, name);
+   
+   return res.json({
+      ok:true,
+      msg:"en el renew",
+      mongoid,
+      name,
+      mysqlid,
+      Mongotoken,
+      MYSQLToken
+   })
+}
+En este punto ya somos capaces de registrar a un usuario y mandarle su token,de logearle y mandarle su token y de renovar un token siempre y cuando el token que se manda sea válido(si no saltará en el jwt.decode por el catch.
+
+Realmente con este id ya tengo todo.Cuando el cliente manda el token se saca su id y se busca en la base de datos si es Admin,etc permitiendo o denegando operaciones
+Fijate que estamos creando tokens adicionales,pero no estamos destruyendo los anteriores,asi que el usuario tendrá dos tokens validos si se logea dos veces.Para invalidarlos completamente(en vez de simplemente suplantarlos) se suele hacer una blacklist con los tokens que han sido suplantados para invalidarlos
+
+						SECCION 25 AUTH APP FRONTEND
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- Conectar Angular con nuestro backend
+2- Manejo de JWT
+3- Lazyload y rutas
+4- Guards
+5- Mantener el estado del usuario
+6- Manejo de errores
+7- RXJS y Operadores
+8- SweetAlert
+
+La idea de esta sección es que conectemos nuestro trabajo realizado en la sección anterior con Angular.
+
+
+		VIDEO 385 -386 ESTRUCTURA DEL PROYECTO Y RUTAS
+
+Fijate que la carpeta 'guards' puedo o bien crearla relativa al modulo o bien crearla relativa a toda la app.Fijate lo fácil que es traerse un css y pegarlo en styles.css o traerse assets como fuentes o imagenes y pegarlas en el directorio assets.
+IMPORTANTE: se pueden anidar varios lazy loads y tengo que confirmar si es necesario darle siempre un componente a la primera ruta hija mirando en proyectos de otros desarrolladores
+
+Fijate como hemos tenido que usar dos etiquetas <router-outlet> (confirmando que yo estaba equivocado y si hacen algo).De echo no puedo ver nada sin la segunda.Diria que por cada loadChildren o Children hace falta una(confirmar esto).
+Confirmado: hemos usado las dos formas,la primera definiendo un path + component + children en unas rutas hijas y la segunda con solo path + children(dado que solo habia un componente además).
+
+* Forma Uno (necesitó otra <router-outlet> en la template del Component MainComponent,
+const routes: Routes = [
+  {
+    path: '',
+    component: MainComponent,
+    children: [
+      { path: 'login', component: LoginComponent },
+      { path: 'register', component: RegisterComponent },
+      { path: '**', redirectTo: 'login' },
+    ],
+}];
+
+* Forma Dos( no necesita otra <router-outlet>)
+ {
+    path: '',
+    children: [
+      { path: '', component: DashboardComponent },
+      { path: '**', redirectTo: ' ' },
+    ],
+  },
+* Aparte que parece que estos hijos pueden devolver a su vez de forma perezosa otros componentes.
+
+			VIDEO 387 DISEÑO DE LAS TEMPLATES	
+
+Fijate que me ha dejado crear un routerLink con y sin corchetes:
+  <a routerLink="/auth/login" class="txt2"> Crear una aquí 
+  <a [routerLink]="['/auth/register']" class="txt2"> Crear una aquí </a>
+Ambas funcionan.
+En cuanto a la parte de formularios reactivos fijate que se te olvida el (ngSubmit)="metodo()". 
+Fijate la buena idea que es poner [disabled]="loginForm.invalid" para desactivar el boton mientras el formulario sea invalido(y fijate como los ciclos de vida de Angular lo comprueban esto en cada cambio).Debería tratar de buscar como hacer esto en React.
+
+Como siempre,el Validators.email hace una comprobación muy básica.Es mejor usar regexp para los campos email en cualquier framework:
+ Validators.pattern("^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$") <- para Angular.
+En Node puedo usar express-validator y en React en el frente tengo que mirarlo.
+
+				VIDEO 388 DASHBOARD TEMPLATE
+
+Fijate que para redireccionar necesito inyectar la clase Router:
+*Desde el dashboard redireccionaremos al usuario en el logout:
+ logout():void {
+    this.router.navigateByUrl("/auth/login")
+  }
+  constructor(private router:Router) {}
+
+Otras veces hemos usado el método navigate de esta clase inyectada.Pero este router.navigateByUrl es aún más sencillo.
+Hago lo mismo para el login y el register,ambos redireccionan al dashboard:
+constructor (private router: Router){}
+login(){ this.router.navigateByUrl("/dashboard); <- lo mismo para el register
+El dashboard lo vamos a proteger con un Guard
+
+				VIDEO 389 LOGICA DEL LOGIN
+
+IMPORTANTE: puedo actualizar el core de Angular o de la cli con npm update @angular/cli @angular/core.No tengo que instalarlo de nuevo.
+Dado que vamos a crear un servicio me importo el HttpClientModule de @angular/common/http.Fernando lo hace en el app.module.ts.
+IMPORTANTE: Angular se encargará de tomar los environments de producción cuando él esté en un entorno de producción.Asi que siempre que importe los environments los tengo que traer de desarrollo(los environment.ts,no los environment.prod.ts).
+Los environment.prod.ts no se importan nunca,ya lo hace Angular sólo.
+
+ private baseUrl: string = environment.baseUrl;
+
+  loginUsuario(email: string, password: string) {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/auth`, { email, password });
+  }
+Recordando que para que una petición se dispare hay que subscribirse,aqui sólo la defino,ya me subscribiré y por tanto la dispararé en la clase de la template del login.
+Recuerda darle un tipado a la respuesta siempre en Angular:
+
+export interface AuthResponse {
+   ok: boolean;
+   uidMongo: string;
+   uidSQL: string;
+   name: string;
+   Mongotoken: string;
+   MYSQLToken: string;
+   }
+
+					VIDEO 390 GUARDAR LA INFORMACION DEL USUARIO
+
+Vamos a crearnos en nuestro servicio una propiedad privada donde almacenar el usuario:
+
+private _usuario!:Usuario;
+
+  get usuario(): Usuario {
+    return {...this._usuario};
+  }
+Recuerda que es opcional pasar la propiedad por referencia,pero dado que estamos en Javascript es algo bueno.
+Fijate en el potencial de este operador,el catchError que va a capturar el error y puedo devolver lo que quiera.Aunque tiene que devolverse un Observable:
+
+  loginUsuario(email: string, password: string) {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/auth`, { email, password })
+    .pipe(
+      tap( data => {if(data.ok){ this._usuario = {name:data.name,uid:data.uid;}}}}),
+      map( ( {ok} ) => ok),
+      catchError(error => of(false))
+    )
+  }
+Fijate que puedo devolver un string perfectamente: catchError(error => of("error!!")).Fijate también en el orden de los operadores y como se usa el tap cuando no quiero modificar la data,sino pasarla de un nivel a otro.
+Ya con ese usuario lo imprimo en el dashboard.component.html tras meterlo en un get:
+get usuario(){
+  return this.authService
+.usuario} 
+constructor(private router:Router, private authService:AuthService){}
+<pre>{{usuario | json}}
+Fijate que he creado un getter que accede al otro getter.Es muy importante que veas lo útil que ha sido, asinto.
+
+			VIDEO 391 SWEET ALERT 2 MENSAJES DE ERROR
+
+Ya no voy a devolver el of(false) sino todo el error:
+catchError(error => of(error.error.msg)) <- dado que tengo el error en error.msg lo pasamos directamente para el modal.
+Para los errores usaremos sweet alert 2:
+>npm i sweetalert2
+Para llamarlo simplemente se usa
+import Swal from "sweetalert2";
+
+Swal.fire("error",ok,"Error") <- el primer argumento es el header,el segundo el contenido y el tercero el icono.
+
+			VIDEO 392 MANTENER EL USUARIO TRAS RECARGAR EL BROWSER
+
+Actualmente no estamos persistiendo el usuario.Solo tenemos una propiedad que volverá a ser undefined en cada refresh y solo toma un valor al pasar por el login.
+Vamos a guardar el token en el localStorage.Cuando el usuario recarge el navegador comprobaremos ese token:
+  if (resp.ok) { <- en cuanto sepa que la respuesta es exitosa es que hago login
+             localStorage.setItem("mongoToken",resp.Mongotoken)
+             localStorage.setItem("mysqlToken",resp.MYSQLToken)
+
+Ahora vamos a crear un método en el servicio que renueve el token:
+
+  const url = this.baseUrl + '/auth/renew';
+    const headers = new HttpHeaders()
+    .set('mongo-token',localStorage.getItem('mongoToken') || "")
+    .set('mysql-token',localStorage.getItem('mysqlToken') || "");
+
+    return this.http.get(url, {
+      headers: headers });
+  }
+Muy Importante: fijate que Angular va diferente para pasarle los headers y hay que crearse un objeto HttpHeaders.Esta clase viene de @angular/common/http 
+
+Aunque pudiera pensarse que puedo disparar esta petición en el ngOnInit del dashboard.component.ts esto es una mala práctica,ya que el usuario entró hasta el componente,etc... Es por ello que hay que crear un Guard 
+
+					VIDEO 393 GUARD - VALIDAR TOKEN 
+
+La funcionalidad de un Guard es que cada vez que navegue a una ruta (que tenga ese Guard) se valide esa ruta,comprobando la lógica del Guard.No es necesario subscribirse a los Guards.
+Queremos que si el jsonwebtoken es válido dejar pasar al dashboard y adicional fijar la data.
+Los Guards son como servicios que ya están distribuidos a nivel de root,asi que no hay que importarlos.Lo mejor es hacer una pequeña limpieza al archivo y dejar que simplemente devuelve un Observable<boolean> | boolean a secas.
+
+import { Injectable } from '@angular/core';
+import { CanActivate, CanLoad } from '@angular/router';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ValidarTokenGuard implements CanActivate, CanLoad {
+ 
+  canActivate(): Observable<boolean> |  boolean {
+    return true;
+  }
+ 
+  canLoad(): Observable<boolean>| boolean {
+    return true;
+  }
+}
+
+Los Guards siempre van en cada ruta que quiera proteger.En este caso solo queremos proteger 'dashboard'.Van dentro de un arreglo,dado que pueden ser varios,en las propiedades canActivate y canLoad de la clase Routes:
+ {
+    path:"dashboard",
+    loadChildren: () => import("./protected/protected.module").then(m => m.ProtectedModule),
+    canActivate:[ ValidarTokenGuard ],
+    canLoad:[ValidarTokenGuard]
+  },
+Fijate que las propiedades se llaman como las interfaces que implementó en Guard.Recuerda que los métodos del Guard deben ser métodos que se resuelvan a un valor boleano,asi que vamos a cambiar un poco la petición al renew:
+
+  validarToken( ):Observable<boolean>{
+    const url = this.baseUrl + '/auth/renew';
+    const headers = new HttpHeaders()
+    .set('mongo-token',localStorage.getItem('mongoToken') || "")
+    .set('mysql-token',localStorage.getItem('mysqlToken') || "");
+
+    // recuerda que solo puedo retornar Observables
+    return this.http.get<RenewResponse>(url, { headers })
+      .pipe(
+        map(resp => { return resp.ok} ),
+        catchError(error => of(false)) 
+      );
+  }
+
+Dado que me falta el servicio en el Guard lo inyecto:
+export class ValidarTokenGuard implements CanActivate, CanLoad {
+ 
+  constructor( private authService: AuthService){}
+  
+  canActivate(): Observable<boolean> |  boolean {
+    console.log("canActivate")
+    return this.authService.validarToken();
+  }
+ 
+  canLoad(): Observable<boolean>| boolean {
+    console.log("canLoad")
+    return this.authService.validarToken();
+  }
+}
+Y dado que cada vez que viajemos a /dashboard vamos a hacer este GET y tenemos toda la data de respuesta exitosa además es el lugar ideal para persistir al usuario:
+ 
+return this.http.get<RenewResponse>(url, { headers })
+    .pipe(
+      map(resp => { 
+        localStorage.setItem('mongoToken', resp.Mongotoken);
+        localStorage.setItem('mysqlToken', resp.MYSQLToken);
+        this._usuario = {
+          name: resp.name,
+          uidMongo: resp.mongoid,
+          uidMySql: resp.mysqlid,
+        };
+* Al final esa data persistida en la <pre> no la estamos leyendo del localStorage,sino de la propiedad _usuario,que ya no queda undefined más y se rellena con la petición GET(el this._usuario = ...).
+Recuerda que la finalidad del canActivate es que se active o no el módulo mientras que la del canLoad es que se cargue o no.
+
+					VIDEO 396 TAREA REGISTER
+
+Fijate que no importa el orden al desetructurar un objeto:
+const  {password,email,name} = body; <- no importa si name esta el último o el primero.
+			
+				VIDEO 398 PERSISTIR EMAIL
+
+Tras un registro o login exitoso queremos persistir el email también.Hay que:
+retocar las interfaces añadiendo el campo email donde proceda
+retocar el backend para que devuelva también el email en el renew,register y login.
+
+IMPORTANTE: hemos decidido no meter en el token el email,parece que puede ser malo meterle mucha data.Asi pues hay que hacer una peticion GET del usuario en el renew:
+const actualUser = await Usuario.findById(id); <- importante,siempre que pueda debo buscar por id en vez de por otro campo,ya que solo va a buscar en esa columna en vez de en todas las columnas de la tabla y la instrucción es mucho más rápida.
+Siempre que pueda buscar por un campo id en vez de por otra cosa hay que hacerlo.Tampoco importará tanto en bases de datos no muy grandes.
+Fijate que tampoco hacia falta ya asignar el get usuario en cada servicio,con dejarlo en el último valía.
+IMPORTANTE: no tengo porque memorizar todo lo que aprenda de Udemy o de cualquier otro dev.Siempre puedo volver a esta documentación
+
+						VIDEO 401 TEMAS DE LA SECCION 26 DESPLIEGUE
+
+				¿Qué veremos en esta sección?
+
+Esta es una sección pequeña que tiene por objetivo:
+1- Generar versión de producción de Angular
+2- Desplegar nuestra app de Angular en nuestro backend de Node
+3- Desplegar el backend + frontend en Heroku
+4- Realizar actualizaciones por cambios en el Frontend o Backend
+5- Re-desplegar a Heroku
+6- Revisar logs en producción
+
+						VIDEO 403 DESPLEGAR APP DE ANGULAR EN UN NODE
+
+Fijate que queremos incrustar el build de una aplicación Angular en un backend,esto es muy interesante.
+Nosotros no pretendemos usar el angularCLI para desplegar la aplicación.Esto es sólo para la construcción de la misma.
+Lo que tenemos que hacer es generar el build de producción:
+>ng build --prod (ya no importa esta flag)
+
+*Esto va a generar varios archivos.Uno será el main.js que incluye todos los modulos que estoy usando en la aplicacion,,otro el styles.css para los estilos,el polyfills que incluye código para compatibilidad contra navegadores viejos y el runtime es de Angular.
+Los chunks de más abajo son cargados mediante lazyload(corresponde a cuantos modulos cargué por lazyload??)
+Initial Chunk Files               | Names         |      Size         
+main.3cddefeb4bca17d9d393.js      | main          | 238.32 kB        
+styles.2b9d20750734b3c00b85.css   | styles        |  61.02 kB       
+polyfills.acd8b5c1dc1174f1b32a.js | polyfills     |  36.21 kB      
+runtime.e2a58fce8c824bfa8800.js   | runtime       |   2.77 kB     
+                                                                 
+                                  | Initial Total | 338.31 kB   
+                                                               
+Lazy Chunk Files                  | Names         |      Size 
+682.eee4cb0f72781f2d5eb6.js       | -             |  98.45 kB
+168.7072e742809ba1075e72.js       | -             |   1.38 kB
+Build at: 2021-10-04T15:35:57.004Z - Hash: d81326078d763254d911 - 
+* Puedo ver que ocupa unos 480kB(medio MB) Si abro la carpeta 'dist' veré aún más archivo como por ejemplo para fuentes
+IMPORTANTE: recuerda que al servidor Node le dimos un middleware para estáticos y la ruta /public para ellos.Es aqui donde voy a dejar la aplicación!!
+Fijate que Angular me generará dist/projectName/assets+index-html+othersFiles <- es todo esto lo que tengo que subir,lo que esta dentro de esa carpeta projectName.
+Habré pasado de tener dos aplicaciones,una en el 4200 y otra en el 8000(o el que sea) a solo tener una en el 8000(en el backend).Si visito localhost:backendPort veré la App,pero si recargo perderé la info,pues Express toma el control del enrutador y no existen esas rutas más que en el enrutador de Angular.
+
+												SOLUCIONES
+
+Ahora tengo varias soluciones,puede que yo quiera que todas las peticiones menos las que están en /api/auth(las del backend),todas sirvan el directorio público(cosa que ahora no hacen).Esta sería la manera correcta de solventar el problema(el problema es que ya no está Angular sirviendo las rutas sino que lo está haciendo Express).
+Queremos pues que Angular tenga el control del mismo,pero Angular sólo tiene ese control dentro de la carpeta pública.Esto lo cambiamos con un middleware.
+Sin embargo es posible que no tenga acceso a ese backend asi que tendré que activar el useHash:true en el front de Angular:
+
+						SOLUCION UNO USE-HASH EN EL FRONT
+
+*SI no tuvieramos acceso al backend puedo activar el useHash en Angular(en el modulo de rutas principal):
+
+*En el modulo principal,donde esté el forRoot,le paso un segundo argumento
+@NgModule({
+  imports: [RouterModule.forRoot(routes,{
+    useHash:true <- aqui
+  })],
+  exports: [RouterModule],
+})
+export class AppRoutingModule {}
+                                           
+El hash es algo(un simbolo #) que va a concatenar Angular de forma que hace más compatible con navegadores viejos o en lugares en donde no tenga forma de llegar a la página index.html(como es nuestro caso,pues el backend esta sirviendo localhost:4000/dashboard,sin el html)
+
+EL hash es la representación del index.html, poner http://localhost:4200/#/dashboard es como poner http://localhost4200/index.html/dashboard.
+Fijate que cuando estoy en Angular no veo que ponga ese index.html pero es que estoy saliendo por un index.html siempre,da igual que recargue,solo tengo esa opcion,salir por el index.html y que Angular maneje las rutas,pero al subirla al backend ya Angular perdió poder y Express intenta manejar la ruta(lo seguirá haciendo,pero el hash va a llevarle por el index.html).
+Fijate que sólo con una propiedad arreglamos el problema
+Dado que he cambiado algo en la app Angular hay que hacer de nuevo el build:
+>ng build <- Angular sólo va a recrear donde haya cambios(si no hubiera cambios en los estilos,como por ejemplo es el caso,va a respetar el archivo,dejará ese styles.h54kj3k43.css igual,inclusive no le va a cambiar el hash que tiene).Hace React lo mismo??
+
+						SOLUCION DOS
+
+Es posible que yo no quiera ver ese hash '#' en las rutas o que simplemente me quede más cerca el backend,etc... 
+La solución es muy fácil.Despues de declarar todas las rutas para Express creamos esta petición:
+
+app.get('*', (req,res) => {
+  res.sendFile( path.resolve(__dirname,'public/index.html'))
+})
+
+*Asi pues,la clave para incustrar una App en un servidor Node son estas dos middlewares:
+// defino una carpeta para que Node sepa donde van los estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+// Rutas que manejará Angular-Router
+app.get('*',(req,res) => {
+   res.sendFile(path.join(__dirname, 'public/index.html'))
+})
+
+* Esto abre un sinfin de posibilidades,tio.Diria que React va a ser igual.
+
+					VIDEO 404 DESPLEGAR APLICACIÓN DE NODE (ENVs DE PRODUCCION)
+
+Fijate que tengo en los dos environment.ts la baseURI en http://localhost:4000 <.ESi despliego la aplicación tendré que cambiarlo al dominio,cambiar el puerto si es necesario,etc...
+Dado que Heroku me va a dar un puerto tendría que quitar la .env PORT pues no puedo asignarlo.
+Aparte hay que correr la aplicación con node index.js(y no con nodemon index.js,pues no tienen instalado ellos nodemon en el servidor).
+"start":"node index.js" <- esto es obligatorio porque Heroku hará un npm run start
+
+* Puedo ver la version de heroku:
+heroku --version 
+Dado que tengo el MySQL en local lo desplegaré en otro servidor.
+IMPORTANTE: tendré que cambiar las variables de entorno de producción al dominio o IP de ese servidor.
+Es probable que tenga que hacer ng build de nuevo
+IMPORTANTE:si alguna vez necesito algo de Heroku puedo volver a ver estos tres videos de Fernando.
+Continuar con el curso Avanzado pero antes hacer algun proyecto para practicar.
+
+

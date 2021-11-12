@@ -1,0 +1,39 @@
+
+  <table class="table table-hover table-action table-striped border border-2 rounded-3 border-dark">
+    <thead class="table-info">
+      <tr>
+        <th>#</th>
+        <th>Bandera</th>
+        <th>Nombre</th>
+        <th>Poblacion</th>
+        <th>Más...</th>
+      </tr>
+    </thead>
+    <tbody *ngIf="paises.length > 0; else vacio">
+      <tr *ngFor="let pais of paises; let i = index"
+       class="animate__animated animate__backInLeft">
+      <td>{{ i + 1 }}</td>
+      <td>
+        <img [src]="pais.flag" class="small-flag" alt="" />
+      </td>
+      <td> {{pais.capital}} , {{ pais.name }}</td>
+      <td>{{ pais.population | number }}</td>
+      <td>
+        <a [routerLink]="['/pais', pais.alpha2Code]">Ver país</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+  <ng-template #vacio>
+    <tbody>
+      <tr class="animate__animated animate__fadeInUp">
+        <td colspan="5">
+          <h4 class="text-center text-white bg-dark m-0 p-2 rounded-3">
+            Sin resultados.Realice búsqueda
+          </h4>
+        </td>
+      </tr>
+    </tbody>
+  </ng-template>
+  

@@ -1,0 +1,46 @@
+<div class="animate__animated animate__shakeY animate__fast">
+  <h2 class="bg-danger text-center rounded-3 p-2 mt-2">
+    Busqueda por nombres de paises
+  </h2>
+  <hr />
+
+  <div class="row">
+    <div class="col mt-2">
+      <app-pais-input
+        (onEnter)="buscar($event)"
+        (onDebounce)="sugerencias($event)"
+        [leyenda]="leyenda"
+      ></app-pais-input>
+    </div>
+  </div>
+
+  <ul *ngIf="mostrarSugerencias"
+  class="list-group">
+    <li *ngFor="let pais of paisesSugeridos"
+      class="list-group-item ">
+      <a class="nav-link bg-warning rounded-3 border border-dark border-1 text-dark list-group-item-action" [routerLink]="['/pais', pais.alpha2Code]">
+        {{ pais.name }}
+      </a>
+    </li>
+
+    <li class="list-group-item list-group-item-action"
+    (click)="buscarSugerido( termino)">
+      <a class="nav-link bg-secondary rounded-3 border border-info border-1 text-white list-group-item list-group-item-action" style="cursor: pointer;transition: 500ms;">
+      Mostrar todos los resultados  para "{{ termino }}"
+      </a>
+    </li>
+  </ul>
+
+  <hr />
+</div>
+
+<div *ngIf="hayError" class="alert alert-danger text-center">
+  No se encontró un pais con el término
+  <span class="bg-dark text-white p-1 rounded-3">{{ termino }}</span>
+</div>
+
+<div *ngIf="!hayError" class="row">
+  <div class="col">
+    <app-pais-tabla [paises]="paises"></app-pais-tabla>
+  </div>
+</div>

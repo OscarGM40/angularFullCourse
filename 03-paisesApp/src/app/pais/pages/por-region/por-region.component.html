@@ -1,0 +1,41 @@
+<div class="animate__animated animate__backInRight">
+   <h2 class="bg-secondary text-center text-light rounded-3 p-3 mt-2 border border-warning border-3">Busqueda por regiones</h2>
+   <hr />
+   <h3>Region seleccionada: <small> {{ regionActiva | titlecase }} </small></h3>
+   <hr>
+   
+   <h5 class="mb-4">Seleccione una region</h5>
+   
+   <div class="row">
+      <div class="col">
+      <button *ngFor="let region of regiones"
+      class="btn btn-outline-warning border border-success border-1"
+      [class]="getClase( region)"         
+      (click)="activarRegion( region )"
+      >
+      {{ region | titlecase  }}
+   </button>
+</div>
+</div>
+</div>
+
+
+<div *ngIf="hayError" class="alert alert-danger text-center">
+  No se encontró una region con el término <span class="bg-dark text-white p-1 rounded-3">{{ regionActiva }}</span>
+</div>
+
+<div *ngIf="!hayError" class="row mt-4">
+  <div class="col">
+    <app-pais-tabla [paises]="paises"></app-pais-tabla>
+  </div>
+</div>
+
+
+<!-- [class.btn-primary]="region === regionActiva" -->
+<!-- [ngClass]="{
+   'btn-primary':region === regionActiva,
+   'border':region === regionActiva,
+   'border-warning':region === regionActiva,
+   'border-2':region === regionActiva,
+   'btn-outline-warning':region !== regionActiva
+}" -->

@@ -1,0 +1,27 @@
+/* You can add global styles to this file, and also import other style files */
+// Para trabajar con SCSS fácil me traigo aqui las declaraciones y las uso como CSS(mejorarlo con los partials)
+:root {
+  --surface-a:#1f2d40;
+  --surface-b:#17212f;
+  --surface-c:rgba(255, 255, 255, 0.03);
+  --surface-d:#304562;
+  --surface-e:#1f2d40;
+  --surface-f:#1f2d40;
+  --text-color:rgba(255, 255, 255, 0.87);
+  --text-color-secondary:rgba(255, 255, 255, 0.6);
+  --primary-color:#64B5F6;
+  --primary-color-text:#212529;
+  --font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+}
+
+
+html,body {
+    margin: 10px;
+    background-color: var(--surface-b);
+    font-family: var(--font-family);
+
+}
+
+.text-layout {
+    color: var(--text-color);
+}

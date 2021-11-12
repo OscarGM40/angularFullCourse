@@ -1,0 +1,1037 @@
+			SECCION 12 HEROESAPP RUTAS HIJAS Y LAZY LOAD
+
+Esta seccion es sumamente importante.Veremos el lazy loadMuchos frameworks han copiado el lazy load de Angular para hacer menos pesada la aplicación.También veremos Material Design  y la alternativa al Grid de Material Design que es Angular Flex
+
+Este es un breve listado de los temas fundamentales:
+1- Rutas Hijas
+2- Rutas Principales
+3- LazyLoad
+4- Multiples estilos en la misma SPA
+
+Esta sección es fundamental para seguir el curso, ya que de aquí en adelante, implementaremos la carga perezosa en cada módulo principal de las futuras aplicaciones que haremos.
+
+Comprender el Lazyload no es difícil, y la forma como lo veremos aquí nos ayudará a manejar los dos posibles casos de uso. Uno de ellos es cuando la ruta hija no tiene estilo especial y otra en la que requiere un estilo diferente por cada módulo. 	
+
+			VIDEO 170 INICIO DEL PROYECTO HEROESAPP
+
+Vamos a centrarnos en crear rutas hijas,las cuales serán cargadas mediante carga perezosa.
+Creo un nuevo proyecto y lo renombro a 05heroesApp:
+>ng new heroesApp <- ojo con jasmine-core dependency
+
+Vamos a usar Material Design asi que lo instalamos en la app
+ng add @angular/material 
+* Nos va a hacer varias preguntas esta instalación
+1- Me pedirá un tema,Fernando eligió el Purple/Green 
+2- Me preguntará si quiero la tipografia de manera global(aqui si)
+3- Me pregunta si quiero animaciones en el browser.También quiero
+
+? Set up global Angular Material typography styles? Yes
+? Set up browser animations for Angular Material? Yes
+UPDATE package.json (1138 bytes)
+✔ Packages installed successfully.
+UPDATE src/app/app.module.ts (423 bytes)
+UPDATE angular.json (3223 bytes)
+UPDATE src/index.html (577 bytes)
+UPDATE src/styles.css (181 bytes)
+Pueod ver que me ha actualizado el styles.css,el index.html el app.module.ts y el angular.json.Muy eficiente,él.
+
+			VIDEO 171 MODULOS,COMPONENTES,SERVICIOS INICIALES,...
+
+El lazy load reduce considerablemente el peso de nuestra aplicación.Pero veamoslo:
+
+1- >ng g module auth <- creará una carpeta colgando de app
+>05heroesApp$ ng generate module auth<- modulo para autenticación
+CREATE src/app/auth/auth.module.ts (190 bytes)
+* IMPORTANTE: dado que son los módulos los que se pueden cargar de manera perezosa y Angular no lo sabe no me actualiza nada pues Angular esta esperando que le diga que tipo de carga quiero.
+
+2- ng g module heroes <-es como ventas,es la app
+3- ng g module material <- será el módulo tonto para imports/exports
+Igual que hicimos con el prime ng
+
+En ambos folders auth y heroes les creo un subfolder pages,ya que tendrán rutas ambos.Pasamos a los componentes:
+>ng g c auth/pages/login --skip-tests
+>ng g c auth/pages/register --skip-tests
+Ahora para el modulo heroes
+>ng g c heroes/pages/agregar --skip-tests -is
+>ng g c heroes/pages/buscar --skip-tests -is <- para buscar heroes
+>ng g c heroes/pages/heroe --skip-tests -is <- ver un heroe en concreto
+>ng g c heroes/pages/home  <-la pag principal de los heroes
+>ng g c heroes/pages/listado <- mostrar un GetAllHeroes de la BBDD
+
+IMPORTANTE: no vamos a exportar nada en heroes ni auth,ya que lo vamos a hacer de manera perezosa.
+También queremos crear el componente 404 asi que creo la carpeta shared.
+>ng g c shared/errorPage --skip-tests -is
+Como en shared no hay modulo declarará este componente en las declarations del @NgModule del app.module.ts.Como sabemos que no 
+
+				VIDEO 172 RUTAS PRINCIPALES
+
+Vamos a crear el archivo de rutas principal:
+>ng g m routes/appRouting --flat <- esta flag no creará el directorio.Debo memorizarla
+
+import { RouterModule, Routes } from "@angular/router;
+
+const routes: Routes = [
+{ 
+  path: '404',
+  component: 404Component
+},
+{
+  path: '**',
+  redirectTo:'404'
+}
+IMPORTANTE: yo no puedo traer aqui los demás componentes,ya que si hago esto cuando pida la app pediré todo y eso no es lazy load.Interesante.
+
+@NgModule({
+declarations:[],
+exports: [ RouterModule ],
+imports: [ RouterModule.foorRoot(routes)]
+Aun faltará importar este modulo de rutas.Recuerda que Angular no actualiza los módulos para no interferir en mi decisión de hacer lazy load.
+
+			VIDEO 173 RUTAS HIJAS Y LAZY LOAD
+
+El lazy load no es difícil.Solo es hacerlo la primera vez y despues siempre es igual.Fijate que vamos a necesitar dos archivos de routing más(luego serán dos módulos).
+Podiamos haberlo echo por cli,pero aún no.
+>ng g m auth/auth-routing --flat
+* fijate que al ser un modulo no me importará nada Angular.
+
+ Para definir las rutas hijas simplemente uso la propiedad children []
+
+const routes:Routes = [
+  {
+    path:'',
+    // children pone un segmento al path que se le asigne a este componente(user/getone user/getall <- user seria este componente
+    children:[
+      {
+        path: 'login',
+        component: LoginComponent,
+      },
+      {
+        path: 'register',
+        component: RegisterComponent,
+      },
+      {
+        path:'**',
+        redirectTo:'login'
+      }
+    ]
+  }
+]
+
+Obviamente hay que importar y exportar la clase RouterModule:
+imports : [ RouterModule.forChild( routes ) ],
+exports : [ RouterModule ]* 
+En cada apliación solo puede haber un único RouterModule.forRoot() mientras que puede haber varios forChild(rutas)
+Date cuenta que este módulo aún esta flotando en la app.De momento lo llevo al modulo main de esa seccion,pero ese también esta flotando.
+
+*De alguna forma debo decirle a Angular que si alguien navega a /auth cargue ese módulo(con lo que tendré acceso a /auth/login y /auth/register).
+Esto se hace en el archivo de las rutas Root o Padre.En vez de usar la propiedad Component que hace traer ese componente a Angular usaremos la propiedad 'loadChildren'
+
+* En el modulo con RouterModule.forRoot()
+const routes: Routes = [
+{
+  path:'auth',
+  loadChildren: () => import('./auth/auth.module.ts).then( module => module.AuthModule <- ojo,que es el maim module de esa seccion,no el de rutas.Ademas el import es una Promise
+
+Puedo ver que es terriblemente sencillo definir en el padre rutas que serán resueltas en archivos de routing hijos y cargados condicionalmente.
+Esto lo puedo comprobar con un simple enlace y mirando las Devtools,veré que lo carga 'on the fly':
+<a routerLink="/auth/login">Ir al login</a> <- fijate que el routerLink si necesita /auth ya que con auth da fallo.
+
+LAzy load y OnDemand es prácticamente lo mismo.
+IMPORTANTE: además,solo lo va a cargar una vez.Una vez que el usuario pida un módulo que se cargue OnDemand queda en memoria y no necesita cargarse más.
+Puedo apreciarse la espectacularidad de este simple hecho,ouyea -_-
+Cada vez que se pida algo adicionalmente a ese módulo se traerá desde la memoria,siendo ipso facto y no necesitando carga.
+
+mports: [RouterModule.forRoot(routes, {
+    preloadingStrategy: PreloadAllModules  <----------*****
+  })],
+
+				VIDEO 173 174 HEROES ROUTING
+
+Tarea completada exitosamente.
+En breve veremos como mantener dos estructuras de estilos diferentes en la app,usando un segundo <router-outlet>
+
+		VIDEO 175 SEGUNDO OUTLET - MOSTRAR RUTAS HIJAS
+
+Sólo hay que hacer una pequeña configuración para que realmente lo que hemos hecho se catalogue como rutas hijas. 	
+Se trataria de crear un componente Home para esas rutas hijas:
+const routes: Routes = [
+    path: '',
+    component: HomeComponent, <- agregar esto
+    children: [
+      {
+
+El HomeComponent
+<h1>Heroes App</h1>
+<br> 
+<router-outlet></router-outlet>
+
+			SECCION 13 DISEÑO DE LA APP 
+
+
+Este es un breve listado de los temas fundamentales:
+
+1- Angular Material
+2- Interfaces y tipado
+3- Pipes personalizados
+4- Variables de entorno
+5- Autocomplete de AngularMaterial
+6- Peticiones HTTP
+7- JSON-Server
+8- Angular Flex y Flexbox
+
+Y más...
+
+Esta sección tiene por objetivo principal aprender a utilizar Angular Material, es la primera de varias secciones donde lo usaremos. Al final del día trabajaremos con muchos componentes de Angular material que les ayudará a ver cualquier otro tipo de paquete modularizado de la misma manera y ustedes sabrán aplicarlo.
+
+En la siguiente sección después de esta, continuaremos la aplicación pero realizaremos un CRUD.
+
+				VIDEO 181 CONTINUACIÓN DEL PROYECTO
+
+Abro la aplicación y las urls a la web Angular Material y voy preparando el módulo "tonto" para los componentes,que también serán módulos,como en PrimeNG.
+
+También instalo @angular/flex-layout(ojo que pide el cdk):
+>npm i -s @angular/flex-layout @angular/cdk
+
+Su doc esta aqui: https://github.com/angular/flex-layout
+Hay que importarlo como un módulo:
+
+import { FlexLayoutModule } from '@angular/flex-layout';
+
+@NgModule({
+    ...
+    imports: [ FlexLayoutModule ],
+    ...
+});
+
+After that is configured, you can use the Angular Layout attributes in your HTML tags for flex layout:
+
+<div fxLayout="row" fxLayoutAlign="space-between">
+</div>
+
+			VIDEO 182 SIDENAV TOOLBAR E ICONOS
+
+Queremos usar un sidenav(es el drawer que se oculta y se muestra segun breakpoint),breakpoint
+Lógicamente aqui hay que mirar mucho su documentación,pero aqui algunas nociones básicas
+
+El sidenav viene con el evento toogle ya creado por Angular.Puedo poner una referencia local y con un boton usar esa ref.toogle().
+Hay varios modos,que haga hover sobre el contenido o que lo empuje con el modo push.
+El ancho del drawer por defecto será su contenido.
+Fijate el uso de flex: 1 1 auto; para mandar el botón del logout a la drecha:
+
+.spacer { 
+   flex: 1 1 auto;
+}
+button1>...
+span class="spacer">
+button2>logout 
+El spacer empuja a los otros dos a los lados,hay que usar un span con esa clase.Interesante,aunque con justify-content:space-between consigo lo mismo.
+
+<mat-sidenav-container fullscreen>
+  <mat-sidenav #sidenav mode="push">
+    <mat-toolbar color="primary">
+      <span>Menu</span>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+    </mat-toolbar>
+    <mat-nav-list>
+      <a routerLink="./listado" mat-list-item (click)="sidenav.toggle()">
+        <mat-icon mat-list-icon>label</mat-icon>
+        <span>Listado de Héroes</span>
+      </a>
+
+      <a routerLink="./agregar" mat-list-item (click)="sidenav.toggle()">
+        <mat-icon mat-list-icon>add</mat-icon>
+        <span>Añadir Héroe</span>
+      </a> ...
+Puedo ver que es bastante sencillo usar Material Design en Angular.
+
+		VIDEO 184 IMPLEMENTANDO JSON-SERVER FAKE-BACKEND
+
+Usualmente una aplicación se conecta a un backend,pero aun no tenemos uno.Lo que vamos a usar es el módulo json-server el cual hace una fake API sin usar código en unos segundos.Ojo,que se instala de manera global
+
+>npm i -g json-server
+
+Este módulo necesita un archivo JSON con los datos a servir.Fernando provee un repo con esos datos.Creo una carpeta con ese db.json.
+Para levantar ese servidor se usa 'json-server --watch db.json'
+>json-server --watch db.json
+
+Esto lo servirá en localhost:3000.Me dirá por consola que endpoints crea cada archivo creará rutas diferentes:
+
+  Resources
+  http://localhost:3000/usuarios
+  http://localhost:3000/heroes
+
+  Home
+  http://localhost:3000
+Ya puedo probarlo de Postman,por ejemplo.
+
+					VIDEO 185 HEROES SERVICE
+
+La manera ideal de centralizar la información es crear un servicio para los heroes.Asi que creo el folder services en heroes y:
+>ng g s heroes/services/heroes --skip-tests
+
+Recuerda que el servicio ya viene con providedIn:'root' asi que no tengo que proveerlo en ningun módulo.
+Además este provider no influye en el lazy load.
+Recuerda que activar el servicio son dos pasos:
+
+1 - importar el Módulo HttpClientModule hacia la app
+import { HttpClientModule } from '@angular/common/http'; 
+2- inyectar la clase HttpClient en el servicio:
+constructor( private http:HttpClient) {}
+ 
+Voy a quicktype.io y me traigo el resultado de http://localhost:3000/heroes:
+Recuerda que la petición si no uso el subscribe me devuelve un Observable y en este caso además es de tipo Heroe[]
+
+  getHeroes() :Observable<Heroe[]> { 
+    return this.http.get<Heroe[]>('http://localhost:3000/heroes')
+  
+Esto si es importante,willy.tomate tu tiempo para sacar el tipado cuando estes en Angular.
+
+ya solo es meter la respuesta en un array,iterarlo en la template,etc.Fijate que el OnInit es un buen punto para hacer la peticion:
+
+constructor( private http: HttpClient) { }
+heroes: Heroe[]= [];
+
+ngOnInit():void {
+ this.heroesService.get('url).subscribe( heroes => this.heroes = heroes}
+
+en la template:
+<ul>
+  <li *ngFor="let heroe of heroes">
+    {{ heroe.name }} ...more code
+
+Lo siguiente será sacar la info en Cards de Material.También aprenderemos como usar el angular-flex.
+
+			VIDEO 187 MATERIAL CARDS Y FLEX-LAYOUT
+
+Como siempre para usar una Card hay que traer el módulo etc:
+>import {MatCardModule} from '@angular/material/card';
+Aunque puede usarse sóla,viene con varios componentes adicionales:
+mat-card-title
+mat-card-subtitle
+mat-card-content
+mat-card-actions
+mat-card-footer
+
+
+<mat-card *ngFor="let heroe of heroes">
+   <mat-card-header>
+      <mat-card-title>
+         {{ heroe.superhero}}
+      </mat-card-title>
+      <mat-card-subtitle>
+         {{ heroe.alter_ego }}
+      </mat-card-subtitle>
+   </mat-card-header>
+<img mat-card-image src="assets/heroes/{{heroe.id}}.jpg" alt="">
+
+<mat-card-content>
+   <h3>{{ heroe.publisher }}</h3>
+   <p>
+      <strong>Primera aparición</strong>
+      {{heroe.first_appearance}}
+      <br>
+       <strong>Personajes: </strong>
+       {{ heroe.characters}}
+   </p>
+</mat-card-content>
+
+<mat-card-actions>
+   <button mat-button color="warn">Leer más...</button>
+   <button mat-button color="info">Editar</button>
+</mat-card-actions>
+</mat-card>
+
+A resaltar atributos como mat-button o mat-card-image que hace la imagen responsiva,y debo memorizar poco a poco.
+
+				VIDEO 189 FLEX-LAYOUT DE ANGULAR
+
+La verdad que trabajar con flex-layout es muy fácil:
+
+<div fxLayout="row wrap" 
+  fxLayoutAlign="center"
+  fxLayoutGap="20px">
+  <div fxFlex="30"
+    fxFlex.md="30"
+    fxFlex.lg="15"
+    fxFlex.sm="45"
+    fxFlex.xs="90"
+   *ngFor="let heroe of heroes"
+
+Propiedades como fxFlex tienen su contrapartida para los breakpoints que definieron con fxFlex.lg | fxFlex.md | fxFlex.sm y lo mismo para fxLayout (puedo usar fxLayout.md="row" y fxLayout.sm="column" para poner en una columna todo en cuanto sea sm.
+
+			VIDEO 189 TAREA HEROE COMPONENT
+
+Vamos a sacar la tarjeta a un componente.Del ejercicio lo más importante a aprender es que no necesito inicializar la variable:
+>  @Input() heroe!:Heroe; 
+* aparte me pide el operador not null assertion
+
+			VIDEO 190 TAREA PIPE IMAGEN
+
+Cuando mostremos la imagen puede que la tenga o puede que no.Queremos hacer un pipe con esas dos opciones.Asi pues me creo un pipe:
+
+@Pipe({
+  name: 'heroeImagen'
+})
+export class HeroeImagenPipe implements PipeTransform {
+
+  transform(heroe: Heroe): string {
+    return `assets/heroes/${heroe.id}.jpg`;
+  }
+
+en la imagen: <img mat-car-image [src]={{ heroe | heroeImagen }}>
+
+			TAREA RUTA HEROE Y EDITAR HEROE
+
+La tarea va a ser crear las rutas para editar y ver:
+
+      {
+        path:'editar/:id',
+        component: AgregarComponent
+      },
+      {
+        path:':id',
+        component: HeroeComponent
+      },
+Fijate que puedo usar routerLink en un button perfectamente.Recuerda que al usar rutas dinámicas necesito un array(igual con estáticas también puedo).
+Lo más importante es meter ese array entre comillas dobles ya que necesitaré las simples dentro de él.
+
+<button mat-button-color="warn" [routerLink]="['/heroes',heroe.id]">
+<button mat-button-color="info" [routerLink]="['/heroes/editar', heroe.id]">
+
+* Parte dos de la tarea.Para rescatar un parametro de la URL(un parametro y no un queryParam) se usa la clase ActivatedRoute del @angular/core.
+Hay que inyectarla para poder usar su propiedad snapshot.params.[id] sustituyendo id por como se llamará ese param.
+
+import { ActivatedRoute } from "@angular/core"
+
+constructor ( private route: ActivatedRoute ) { }
+
+ngOnInit () : void {
+ let id = this.route.snapshot.params.id; <- siempre que se llamara id.
+console.log(id)
+}
+
+Como puedo ver es sencillo rescatar un param de la URL actual,pero hay que memorizar la clase e inyectarla.
+
+* NOTA: Fernando no usó snapshot.params ya que saca un snapshot.En vez de eso usó un Observable.
+this.route.params.subscribe( dato => console.log(dato) );
+
+Investigar hasta que punto es importante subscribirse en vez de sacar una foto.Fijate también que subscribirse es la opción más segura.Debería tirar por ahi ya que lo dicta su majestad Fernando Herrera -_-.De todas formas debo recordar que hay dos formas de sacar parámetros de la URL simplemente.
+
+				VIDEO 192 PANTALLA DE HEROE
+
+Vamos a usar un par de elementos que no hemos usado hasta ahora.Uno de ellos es el grid y el otro el spinner.
+El mat-grid-list es una lista de dos dimensiones para ubicar celdas en su interior(un grid de css,vamos...)
+
+import { MatGridListModule } from '@angular/material/grid-list';
+Debe especificar su atributo cols que establece el numero de columnas.Las rows se designan automáticamente.
+
+Por otro lado los progress spinner son los tipicos loading:
+
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner'; 
+
+Tarea: ver el spinner o el heroe:
+
+<mat-grid-list cols="1" *ngIf="!heroe; else divHeroe">
+  <mat-grid-tile>
+    <mat-spinner>
+...
+
+<ng-template #divHeroe>
+  {{ heroe | json }}
+</ng-template>
+* fijate como el grid necesitar el atributo cols y dentro se usan tiles.
+Para recibir el heroe me creo un servicio que haga una petición a un Heroe:
+getHeroeiById(id:string):Observable<Heroe> {
+  return this.http.get<Heroe>("http://localhost:3000/heroes/dc-batman")
+}
+En la clase del heroe.component,en el onInit tendrá que hacer esa petición:
+constructor( private route:ActivatedRoute, private heroeSrv:HeroeService) {}
+
+ngOnInit():void {
+this.route.params <- aqui viene el operador switchMap,es como un map
+.pipe( switchMap( ({id}) => this.heroeSrv.getHeroeiById(id)))
+.subscribe( heroe => this.heroe= heroe) <- ya la tengo en la propiedad,con lo que funcionará la directiva ngIf.
+
+NOTA: esto se podia haber echo con dos subscribes! uno para el id y otro para el servicio(tal como teniamos el código ya teniamos uno,solo es concatenar el otro) 
+
+Para navegar de vuelta hay que inyectar la clase Router también en el constructor:
+constructor(private route: ActivatedRoute,
+              private heroeService: HeroesService,
+              private router: Router) {}
+
+  regresar() {
+    this.router.navigate(['/heroes/listado'])
+  }              
+En el boton que yo quiera (click)="regresar()"
+
+				VIDEO 194 VARIABLES DE ENTORNO
+
+Angular ofrece una solución muy sencilla para usar variables de entorno.Está en la carpeta environments,algo que ya habiamos comentado.
+Hay dos environments,uno de producción y otro para desarrollo(en realidad puedo hasta crear más)
+
+En el main.ts es donde tendría que cambiar cosas:
+
+import { enableProdMode } from '@angular/core';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+
+import { AppModule } from './app/app.module';
+import { environment } from './environments/environment';
+
+if (environment.production) {
+  enableProdMode();
+}
+* Fijate que se llama a una función enableProdMode() que viene del core.Sea como sea creamos las env en ambos archivos:
+
+* En el de dev pongo esto
+export const environment = {
+  production: false,
+  baseUrl:'http:/localhost:3000'
+};
+
+ Ya solo es crearse una propiedad de tipo string,pero ojo con no importar el environment correcto:
+
+import { environment } from 'src/environments/environment';
+import { Heroe } from '../interfaces/heroe.interface';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HeroesService {
+
+  private baseUrl: string = environment.baseUrl;
+
+* Como quiero el de dev no me lo traigo desde el environment.prod 
+
+			 VIDEO 195 AUTOCOMPLETE DE MATERIAL
+
+Material provee su propio autocomplete.Pero para poder implementarlo son una serie de módulos dependientes entre ellos.
+Necesitaremos <mat-form-field> ,matInput(propiedad que le da estilo al input),formControl(propiedad de los formularios reactivos de Angular)
+Asi pues sigo la documentación:
+
+import {MatAutocompleteModule} from '@angular/material/autocomplete';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input'
+
+Importante: como voy a trabajar con formularios necesito importar el FormsModule ya que quiero usar un [(ngModule)]
+
+Aunque sean bastantes cosas no es muy complicado:
+
+    <mat-form-field class="example-full-width" appearance="fill">
+      <mat-label>Number</mat-label>
+      <input
+        type="text"
+        placeholder="Pick one"
+        aria-label="Number"
+        matInput
+        [(ngModel)]="termino"
+        [matAutocomplete]="auto"
+      />
+      <mat-autocomplete #auto="matAutocomplete">
+        <mat-option *ngFor="let heroe of heroes" [value]="heroe">
+
+          {{ heroe.superhero }}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+* En 'termino' tengo el valor de la caja de texto, y en el *ngFor tengo el array de terminos sobre el que autocompletar.Lógicamente,tengo que proveer yo de los valores a autocompletar.
+
+			VIDEO 196 AUTOCOMPLETE PARTE II
+
+Nuestra API ya ofrece el filtrado por query:
+get http:localhost:3000/heroes?q=super&_limit=5.
+Los queryParams son 'q' y '_limit'
+Con todo esto ya puedo crear un método que busque por sugerencias(recuerda que tengo enlazado con [(ngModel)]="termino" el input.
+
+getSugerencias(termino:string):Observable<Heroe[]> {
+return this.http.get<Heroe[]>(`${this.baseUrl}/heroes?q=${termino}&_limit=5`);
+
+*Ya solo falta llamar al metodo con ese termino
+termino:string="";	
+heroes:Heroe[]=[];
+
+buscar(){
+this.heroesService.getSugerencias(this.termino)
+  .subscribe( data => this.heroes = data) <- meto la data en el array
+}
+Aún nos falta rescatar el valor que el usuario eliga de ese <select> desplegable que ofrece Material Angular.Para ello la propia libreria ofrece eventos, como el (optionSelected)="$event" que meterá en $event.target.value lo que seleccione el usuario.
+Después,lógicamente, busco por ese Heroe y lo muestro en una Card,por ejemplo.
+
+IMPORTANTE: el operador not null assertion se puede usar al final de una propiedad!,a diferencia de operador ? que siempre va antes:
+
+
+  opcionSeleccionada(event:MatAutocompleteSelectedEvent){
+    const heroe:Heroe = event.option.value;
+    this.termino= heroe.superhero;
+
+    this.heroesService.getHeroePorId(heroe.id!)
+    .subscribe(heroe => this.heroeSeleccionado=heroe);
+  }
+* fijate en el uso de heroe.id! <- esto es muy importante,es una gran mejora,debo memorizarlo y comprenderlo.
+ 
+Importante: fijate como si necesito que una propiedad sea Heroe | undefined simplemente lo hago:
+       if(event.option.value == ""){
+       this.heroeSeleccionado=undefined;
+       return console.log('vacio')
+    }
+Si lo necesito lo hago.
+
+				SECCION 14 HEROES CRUD
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- CRUD
+Create
+Read
+Update
+Delete
+
+2- Pipes puros e impuros
+3- Snacks
+4- Dialogs
+5- Inyección de servicios manualmente
+
+Esta sección les dará las bases para poder realizar CRUD completos hacia cualquier backend basado en servicios web, mediante comunicación JSON
+
+				VIDEO 204 PANTALLA AGREGAR HEROE
+
+En cuanto al AngularFlx,puedo definir una fila con fxLayout="row" y la separación entre sus columnas con fxLayoutGap.Cada hijo además puede decir cuanto ocupa con fxFlex(como quiero dos columnas un 50:
+
+<div fxLayout="row" fxLayoutGap="30px"> <- creo una fila
+  <div fxFlex> columna 1 del 50% </div>
+  <div fxflex> columna 2 del 50% </div>
+</div>
+* Asi pues fxLayout=" row | column" va acompañado de fxFlex="percent%" en los hijos ya sean columnas si puse al padre en row o columnas si lo puse en column.
+
+
+* Con un poco conocimiento se pueden hacer cosas muy chulas
+<div fxLayout="row" fxLayoutGap="40px" >
+  
+   <div fxFlex="50" fxLayout="column">
+
+      <div fxLayout="row" fxLayoutGap="30px">
+         <mat-form-field fxFlex="50">
+            <mat-label>Super Héroe</mat-label>
+            <input matInput 
+            type="text" required >
+         </mat-form-field>
+         <mat-form-field fxFlex="50">
+            <mat-label>Alter Ego</mat-label>
+            <input matInput  
+              type="text" required >
+         </mat-form-field>
+      </div>
+      
+      <mat-form-field >
+         <mat-label>Primera Aparición</mat-label>
+         <input matInput  
+           type="text" required >
+      </mat-form-field>
+
+			VIDEO 205 INSERTAR EL FORM EN LA BASE DE DATOS
+
+Necesitamos poder rescatar la información de ese formulario y también guardarla en algun lado(de momento el archivo db.json).
+ Rescatar la información va a ser sencillo con la caja de bananas ngModel:
+
+input... [(ngModel)]="heroe.superhero"
+input ... [(ngModel)]="heroe.alt_img" ...
+
+De momento no vamos a fijarnos en la validación de formularios,asi que creo un método para el botón ese:
+
+<button mat-raised-button (click)="guardar()"
+
+En la clase:
+guardar(){
+  it(this.hero.superhero.trim().lenght === 0 {
+   return;
+ }
+ peticion POST a través del servicio
+this.heroesService.agregarHeroe(this.hero).subscribe( resp => console.log('respuesta',resp)
+
+}
+* En el servicio creo esa peticion POST
+agregarHeroe(heroe:Heroe):Observable<Heroe> {
+ return this.http.post<Heroe>(`${this.baseUrl}/heroes`,heroe);
+
+IMPORTANTE: es el subscribe el que dispará la petición.Tengo que subscribirme,aunque sea para emitir un triste console.log.
+
+Fijate que en ese console log veré el campo id que le ha puesto el backend confirmando que realmente se ha insertado,pues hay un id.
+
+			VIDEO 206 EDITAR HEROES
+
+Recuerda que podiamos pulsar en Editar heroe y nos iba a llevar a /editar/:id. 
+Fijate que el recibir un id puede hacerme de bandera o boleano,para saber si estoy editando o agregando!
+constructor( private activatedRoute:ActivatedRoute) {}
+ngOnInit():void{
+  this.activatedRoute.params.subscribe( ({id}) => si hay id estoy en editar...
+}
+
+Sin embargo no es esto únicamente lo que quiero,ya que lo que quiero realmente es realizar una petición para recuperar ese héroe y poblar el formulario.
+Para ello usaremos el operador switchMap(es básicamente un map que me deja hacer cosas antes)
+
+ngOnInit(){
+  this.activatedRoute.params
+   .pipe( switchMap ( ({id}) => this.heroesService.getHeroeById(id)))
+   .subscribe( heroe => this.heroe = heroe); <- fakin angular
+
+* Como el objeto está asociado al form con el ngModel poblará el formulario.
+Con este id ahora puedo condicionar la petición que realizo al pulsar el botón guardar(ya que de momento sólo va por post).
+Asi que si el id no es undefined puedo ir por put y si es undefined por post.
+Debo recordar que el id me hace de boleano/bandera.
+
+Por último queremos que cuando inserte o actualize se nos rediriga.Fijate que para ello voy a necesitar inyectar la clase Router de Angular en ese componente.
+NO tiene nada que ver Router con ActivatedRoute,uno es para navegar y otro para sacar parámetros de la Url.
+
+constructor( private route:Router, ... args) {}
+
+			VIDEO 207 EXCEPCIONES EN EL PIPE IMAGEN
+
+Mandamos una foto por defecto:
+ transform(heroe: Heroe): string {
+    if(!heroe.id && !heroe.alt_img){
+      return 'assets/no-image.png';
+    } else if ( heroe.alt_img ) {
+      return heroe.alt_img;
+    } else{
+      return `assets/heroes/${heroe.id}.jpg`;
+    }
+Fijate que estamos haciendo una petición siempre enel onInit.Hay que cambiar esto:
+Con this.route.url veré /heroes/agregar o /heroes/editar. Haré sólo la petición si estoy en editar:
+
+if(this.route.url.includes('editar'){
+
+			VIDEO 208 ELIMINAR REGISTROS
+
+A la hora de borrar un registro no se me devuelve un Heroe asi que la lógica de negocio del servicio cambiará un poco:
+
+borrarHeroe( id:string):Observable<any> {
+    return this.http.delete<any>(`${ this.baseUrl }/heroes/${ id}`); 
+
+Ya solo me queda llamarlo al pulsar un botón:
+
+<button (click)="borrarHeroe()">...
+
+ borrarHeroe(){
+    this.heroesService.borrarHeroe(this.heroe.id!)
+      .subscribe( heroe => {
+        this.router.navigate(['/heroes/listado'])
+      })
+  }
+
+			VIDEO 209 PIPES PUROS E IMPUROS
+
+Nos hemos dado cuenta que la imagen no cambia hasta que refrescamos al actualizar.
+En Agular cuando un argumento cambia se renderiza ese método,componente,etc.. como en React.Si pongo un console.log en el pipe veré que se ejecuta dos veces,pues el argumento Heroe cambia una vez:
+
+  transform(heroe: Heroe): string {    
+    console.log('pipe imagen se procesó')
+
+Esto es importante,cada vez que cambia un argumento se dispara de nuevo ese método,template,...
+Sin embargo,al ser un pipe,viene en estado 'pure' por defecto(es un boleano).
+* Cuando es true,el pipe es puro,lo que significa que el método transform es invocado sólo cuando sus argumentos cambian
+Si el pipe tiene estado interno,es decir,que el resultado depende de otros argumentos(como nuestra Url) hay que ponerlo en false(o impure)
+No se dispara porque es un objeto,no cambia,ya que apunta siempre a la misma posición en memoria.Lo que si que cambia es su propiedad url,pero como es la propiedad el argumento no cambia realmente.
+Es por esto que tenemos que ponerlo en false,pero ojo,esto hace renderizarse al pipe en cada ciclo de vida,lo cual es bastante costoso,ya que veré que se renderiza numerosas veces(pero lo necesitamos si queremos ver como cambia la imagen en tiempo real).
+
+Dado que parece que se dispara demasiadas veces en impure lo mejor es mandarle un segundo argumento opcional,por ejemplo.O forzar el cambio en el objeto Heroe:
+
+  if(this.heroe.id){
+      this.heroesService.actualizaHeroe(this.heroe)
+        .subscribe( heroe => this.heroe = heroe); 
+*Al asignarlo ya cambia,gran solución.
+
+				VIDEO 210 MATERIAL SNACKBARS        
+
+Nuestra aplicación no tiene feedback alguno.Es buena idea mostrar al usuario el tipico snackbar de que realmente actualizó el Heroe.
+Para ello usaremos el modulo MatSnackBarModule:
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+
+Para usarlo se inyecta la clase en el constructor.Por convención se usa un underscore,aunque no lo haremos nosotros:
+
+constructor( private _snackbar: MatSnackBar) {} <- no confundir la clase con el módulo.
+
+*crearemos un método
+mostrarSnackbar( mensaje: string ) {
+*La sintaxis es this._snackbar.open(mensaje,accion:string,opciones{}  <- la accion es algo descriptivo como exito o error... no confundir con el mensaje
+
+  this._snackbar.open(mensaje,'ok!',{
+  duration: 2500,	    
+  }
+
+Solo queda llamar al snackbar cuando lo desee.
+
+									VIDEO 211 MATERIAL DIALOG
+
+Para borrar es un poco diferente.Queremos que previamente lo confirme el usuario.Lo primero será importar el módulo:
+import { MatDialogModule } from ...
+De igual forma que el MatSnackBarModule hay que inyectar la clas MatDialog en el constructor,sin embargo la doc especifica que sea público:
+
+constructor( public dialog:MatDialog){ } <- de nuevo no confundir esta clase con la de el módulo.
+
+La sintaxis para abrir un Dialog nos obligará a crear un nuevo Component con el contenido de ese dialog(por eso es público??):
+this.dialog.open(Component,options{}) <- veo que me obligan a crear un Component,asi que hagamoslo.
+
+>ng generate component heroes/component/confirmar --skip-tests -is <- lo llamamos de la peor forma posible ... xd
+Ahora se lo paso como argumento(lo que paso es la clase: 
+export class ConfirmarComponent implements OnInit { <- esa clase
+
+this.dialog.open( ConfirmarComponent,{ width: '250px'}) <- el segundo arg son las opciones.
+
+Ya puedo ir a la template del ConfirmarComponent y crear la Interfaz Gráfica.Sin embargo esto es un poco complejo la primera vez:
+
+<p>¿Está seguro de querer borrar el Héroe?</p>
+<button mat-button (click)="borrar()">Si, borrarlo </button>
+<button mat-button (click)="cancelar()">No,me he confundido </button>
+* Hasta aqui todo claro,pero en la clase ConfirmarComponent(la de la template) voy a necesitar inyectar la clase MatDialogRef<T> para rescatar los valores de este Dialog.
+
+constructor (private dialogRef: MatDialogRef<ConfirmarComponent> ) {}
+* Para cerrar simplemente llamo a close() con esta instancia:
+cerrar() { this.dialogRef.close() }
+* Para confirmar el borrado lo veré en el siguiente video
+
+				VIDEO 212 INFORMACIÓN DESDE Y HACIA EL DIÁLOGO
+
+1º: Para mandar información se hace al abrir el modal,con la propiedad 'data' del segundo argumento options{}:
+
+this.dialog.open(ConfirmarComponent, { width:'250px',data: this.heroe }) < al abrir el modal(o sea en agregar.component)
+
+2º: Para recibir la información,la gente de Angular Material definió un nuevo inyectable (@Inject(MAT_DIALOG_DATA) public data: Heroee)
+* Hay que importar el decorador @Inject del core y MAT_DIALOG_DATA. La data:Heroe del tipo que sea,en este caso sabemos que es un Heroe.Quedaria asi
+  constructor(
+    private dialogRef: MatDialogRef<ConfirmarComponent>,
+    @Inject(MAT_DIALOG_DATA) public data:Heroe
+    ) { }
+
+* Al ser pública la data la veo desde el HTML:
+<p> Está a punto de borrar a {{ data.superhero }} </p>
+
+Desde el componente que tiene el boton de aceptar(el del dialogRef) en el borrado le mando un true  en el close
+borrar(){ this.dialogRef.close(true}
+
+Ahora tengo que usar el método afterClosed en el primer elemento,si viene un true llamo al servicio y lo borro:
+
+ borrarHeroe(){
+      
+  const dialog = this.matDialog.open(ConfirmarComponent,{
+    width:'300px',
+    data: this.heroe
+  } )    
+    
+ /*  dialog.afterClosed()
+    .subscribe( result => {
+      if(result) {
+        this.heroesService.borrarHeroe(this.heroe.id!)
+          .subscribe( heroe => {
+            this.router.navigate(['/heroes/listado']);
+            this.mostrarSnackbar('Héroe borrado exitosamente')
+          })
+        }
+      }) */
+      dialog.afterClosed()
+      .pipe( switchMap( result => result ? this.heroesService.borrarHeroe(this.heroe.id!) :new BehaviorSubject(false)))
+      .subscribe( result => {if(result){
+        this.router.navigate(['/heroes/listado']);
+        this.mostrarSnackbar('Héroe borrado exitosamente')
+        
+      }})
+    
+				VIDEO 212 ADECUAR LOS TEXTOS EN EL COMPONENTE AGREGAR
+
+Recordemos que queriamos cambiar dinámicamente el h1 y que dijera Nuevo Heroe ó Editar Heroe,segun lo que estemos haciendo.
+Podemos hacerlo con un ternario
+<h1><span>{{ heroe.id ? 'Editar':'Nuevo' }}</span> ...
+Lo mismo para el botón
+<button>{{ heroe.id ? 'Actualizar':'Crear' }}</button
+
+					SECCION 15 PROTECCION DE RUTAS
+
+Veremos la validación de rutas con la clase Guard,a través de un método suyo boleano nos devolverá si el usuario puede ver o no esa ruta:
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- Protección de rutas
+2- Rutas privadas
+3- Rutas públicas
+4- Servicio de autenticación
+5- Guards
+6- CanActivate
+7- Can Load
+8- Mantener la sesión del usuario
+
+Esta es una sección muy importante, donde controlaremos de forma básica una autenticación, mucho más adelante en el curso, realizaremos autenticación mediante JWT, pero antes de llegar a eso que son temas de Backend, necesito que comprendamos cómo Angular nos puede servir para proteger nuestras rutas.
+
+					VIDEO 218 PANTALLA DE LOGIN BÁSICO
+
+El objetivo no es hacer un login vistoso,sino hacer la protección de la ruta.
+Fijate que ni siquiera tenemos visión sobre el módulo tonto de Material asi que lo importo en el módulo que engloba a LoginComponent,que es el authModule 
+De momento simplemente redirecciono en el botón de Logout al login y viceversa:
+* En HomeComponent(donde tengo visión sobre el botón logout)
+<button mat-raised-button color="primary" (click)="logout()">Logout...
+En la clase inyecto la clase Router para redireccionar:
+constructor( private router: Router ) { }
+logout(){ 
+---código para el logout---
+this.router.navigate(['/auth/login'])
+
+		VIDEO 219 SERVICIO PARA MANTENER EL ESTADO DEL USER
+
+Vamos a crear un servicio en el cual centralizaremos toda la información del usuario:
+>ng g s auth/services/auth --skip-tests
+TAmbién vamos a crear una interface para el tipado:
+export interface Auth {
+  id:string;
+  email:string;
+  usuario:string; }
+En el servicio sabiendo la ruta creamos una petición
+private baseUrl = environment.baseUrl; ** HAY QUE IMPORTAR EL ENV **
+ constructor( private http: HttpClient ){}
+
+login(){ return this.http.get<Auth>(`${this.baseUrl}/usuarios/1`}
+
+		VIDEO 220 MOSTRAR LA INFORMACIÓN DEL USUARIO ACTUAL
+
+La verdad es que es bastante fácil meter un objeto(el user) en una propiedad en un servicio y tener acceso a él inyectandolo en el constructor de la clase o componente que quiera(en este caso queremos mostrar en HomeComponent el nombre del usuario):
+
+* Creamos una propiedad privada(ojo que puede ser undefined):
+private _auth:Auth | undefined;
+
+* Con ayuda del operador rxjs tap y el método pipe() ejecuto una operación antes del subscribe:
+login() {
+return this.http.get<Auth>(`${this.baseUrl}/usuarios/1`)
+.pipe( tap( auth => this._auth = auth )); <- muy sencillo
+
+*Dado que estamos en Javascript y todo va por referencia mejor creamos un getter que devuelva una copia:
+get auth():Auth{
+ return { ... this._auth! }
+}
+* Ya sólo me faltaría inyectar el servicio,pero ojo, tengo que crear un getter para acceder a ese getter:
+* En HomeComponent
+get usuario(){
+  return this.authService.auth; <- un getter para el getter bravo Typescript
+
+Ahora si que puedo inferir el objeto en la template:
+<span>{{ auth.email }}</span>
+
+* Sin embargo simplemente tengo la información en una instancia de clase,cualquier refresh del browser creará otra instancia perdiendo los datos.
+
+					VIDEO 221 ANGULAR GUARDS - CAN LOAD-
+
+Los Guards no es más que otro servicio común y corriente pero nos  va a servir para implementar reglas de validación en nuestras rutas.
+
+Podré especificar cuando debe cargarse una ruta,por ejemplo, si no hay un usuario simplemente no deberá cargarse
+
+AngularCLI tiene un generador de Guards(que recuerda que no es más que un servicio:
+
+>ng generate guard auth/guards/auth <- fijate que voy a crear el folder guards y le voy a llamar auth al guard
+roesApp$ ng generate guard auth/guards/auth2 --skip-tests
+
+? Which interfaces would you like to implement? (Press <space> to select, <a> to toggle all, <i> to invert selection)
+❯◉ CanActivate
+ ◯ CanActivateChild
+ ◯ CanDeactivate
+ ◯ CanLoad
+
+* Al crear un Guard se me pide elegir las interfaces a implementar.Con Space selecciono(lo pone ahi).Elegiré CanLoad también.
+CREATE src/app/auth/guards/auth.guard.ts (651 bytes)
+* Fijate que Angular ya le va a poner .guard.ts por mi,igual que con los servicios.
+
+Si abro ese archivo veré bastante código:
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate, CanLoad {
+ canLoad(
+    route: Route,
+    segments: UrlSegment[]): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+    return true;
+  }
+}
+* De momento nos centraremos en el CanLoad(Angular pregunta si puede cargar esa ruta).
+
+Puedo ver que el método CanLoad tiene dos argumentos, route(de tipo Route) y segments(de tipo UrlSegment[]) y que devuelve un Observable<boolean> o una Promise<boolean> o un boolean.O sea que siempre va a devolver true o false el método CanLoad,aunque me lo dan ya con el true hardcodeado.
+* Lógicamente,de momento solo es un archivo flotando en el proyecto.Tendré que implementar este método en mis rutas(va como otro argumento más,aparte de path o component o loadChildren ...
+
+{
+  path:'heroes',
+  loadChildren: () => import('').then(m => m.AuthModule ),
+  canLoad:[AuthGuard] <- los guards van como un arreglo(hay que importar la clase)
+
+Si ahora voy a localhost:4200/heroes vere que:
+1- en routes tengo a "heroes"
+2- como UrlSegment tengo un array con ["heroes","listado"].Es decir que tengo en UrlSegment[1] a la ruta hija y en UrlSegment[0] a la ruta padre.
+* CanLoad devuelve un Observable.A partir de ahora es implementar la lógica y quitar ese true hardcodeado que permite entrar a todos.
+Por ejemplo que _auth.id tenga un valor.
+
+ constructor( private authService: AuthService) {}
+  canLoad(
+    route: Route,
+    segments: UrlSegment[]): Observable<boolean> | Promise<boolean> | boolean {
+
+      if(this.authService.auth.id){
+        return true;
+      }
+    return false;
+} 
+* Ya solo podrán entrar si hay un id.Ojo que un Guard sólo previene de cargar un módulo.Si ya estaba cargado se podrá acceder a él(Para esto se usa el CanActivate que también hemos implementado su interfaz).
+Siempre que se protegen rutas se usan los dos Guards 
+
+				VIDEO 222 GUARDS II CAN ACTIVATE
+
+Implementamos la siguiente interfaz CanActivate y su método canActivate:
+   canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
+    return true;
+  } 
+* Esta vez trabajamos con snapshots,pero es básicamente lo mismo.La lógica además será exactamente la misma,si existe un id se puede activar la ruta.Falta usar el Guard en las rutas:
+ {
+    path:'heroes',
+    loadChildren: () => import('./heroes/heroes.module').then((module) => module.HeroesModule),
+    canLoad:[ AuthGuard ],
+    canActivate: [ AuthGuard ]
+  },
+ * Puedo declarar tantos Guards como quiera,pero,eso si,se ejecutarán secuencialmente,asi que el orden es importante(aqui primero se ejecutará el canLoad y despues el canActivate.
+
+		VIDEO 223 MANTENER LA SESION DEL USUARIO-LOCAL STORAGE
+
+Para guardar el usuario siempre se usa el localStorage.El momento es cuando hace login.En Angular lo podemos hacer en el método del servicio que gestiona el login.Fijate que puedo encadenar operadores 'tap':
+
+login(){
+return this.http.get<Auth>(url)
+  .pipe(
+    tap (auth => this._auth = auth),
+    tap (auth => localStorage.setItem('token',auth.id))); 
+* Puedo encadenar tantos tap como quiera
+
+Bien,creemos un método que verifique si existe ese user en el localStorage.Fijate que devuelve un Observable<boolean>(hay que importar Observable de rxjs).
+Para resolver un Observable a boolean puedo usar la función 'of(arg)' que intenta resolver su argumento a un Observable.
+
+ verificaToken():Observable<boolean> | boolean {
+  if( !localStorage.getItem('token')){
+   return of(false);}
+ 
+ return this.http.get<Auth>('localhost:3000/usuarios/1)
+  .pipe(
+    map ( auth =>  {this._auth=auth; return true} ) ) ;
+* Parece que el map ya resuelve el true como si fuera un of(true).
+
+Ya solo me queda cambiar la lógica que habiamos hardcodeado en los Guards:
+
+ canLoad(route: Route, segments: UrlSegment[]): Observable<boolean> {
+    return this.authService.verificaAutenticacion().pipe(
+      tap((isAuthenticated) => {
+        if (!isAuthenticated) {
+          this.router.navigate(['/auth/login']);
+        }
+      })
+* Puedo incluso sólo devolver un Observable<boolean>(justo lo que devuelva el verificaAutenticacion()).Con el uso de tap(pues no necesito un map) redirecciono si hay fallo.Esto solo lo puedo hacer usando Observables.
+* El operador rxjs 'map' permite transformar lo que sea que se reciba,aplicandole una función(o no) y devolverlo.Es igual que el método map
+
+IMPORTANTE: si uso lazyLoad debo usar el canLoad también.Si no usará lazyLoad con el canActivate es más que suficiente.
+
+

@@ -1,0 +1,46 @@
+<div *ngIf="!pais;else mostrarPais" class="alert alert-info">
+  Espere por favor...
+</div>
+
+<ng-template #mostrarPais >
+<div class="animate__animated animate__fadeInRight">
+  
+   <div class="row">
+    <div class="col-12">
+      <h1>Pais: <small>{{ pais.name}}</small></h1>
+    </div>
+  </div>
+
+  <div class="row">
+     <div class="col-4">
+        <h3>Bandera</h3>
+        <img [src]="pais.flag" class="img-thumbnail" alt="">
+     </div>
+     <div class="col">
+        <h3>Información</h3>
+        <ul class="list-group">
+           
+           <li class="list-group-item list-group-item-action">
+              <strong>Población</strong> {{pais.population | number}}
+           </li>
+           <li class="list-group-item list-group-item-action">
+              <strong>Código numérico</strong> {{pais.numericCode}}
+           </li>
+           <li class="list-group-item list-group-item-action ">
+              <strong>Código alpha3</strong> {{pais.alpha3Code}}
+           </li>
+ 
+        </ul>
+     </div>
+  </div>
+
+  <h3>Traducciones</h3>
+  <div class="row">
+     <div class="col">
+      <span *ngFor="let translation of translations" class="badge bg-primary me-2">{{ translation }}</span>
+     </div>
+  </div>
+</div>
+  <!-- <pre class="mt-4">{{ pais | json}}</pre> -->
+  
+</ng-template>

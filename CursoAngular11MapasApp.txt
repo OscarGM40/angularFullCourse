@@ -1,0 +1,488 @@
+						SECCION 21 APLICACION DE MAPAS CON MAPBOX
+
+Implementar mapas en una aplicación está a la orden del día y además queda muy estético.Usaremos MapBox dado que GoogleMaps es de pago.MapBox es una libreria hecha en Javascript(aunque usaremos Typescript dado que estamos en Angular).
+
+Este es un breve listado de los temas fundamentales:
+
+1 Manejo de librerías escritas en JavaScript en TypeScript
+2 Uso de Mapas basados en Mapbox (el API es similar a la de Google Maps)
+3 Marcadores
+4 Eventos
+5 FlyTo
+6 Coordenadas geográficas
+7 Componentes para re-utilización de mapas
+8 Mantener objetos de forma persistente
+9 @types
+10 Zoom
+11 Range
+12 Y más
+
+Aunque el uso de mapas no es algo directamente relacionado con Angular, ya que todo se realiza mediante un objeto de una librería de terceros, en este caso Mapbox, es interesante comprender cómo funcionan esas librerías dentro de Angular y cómo poder tener control de los objetos como si fueran propiedades de nuestras clases.
+
+					VIDEO 303 INICIO DE LA APP
+
+Fijate que MapBox es más de lo que parecía.Asi pues voy a su web y usaré el token que ya tengo,aunque también puedo crearme uno(seleccionar todos los checkbox para tiles,styles,etc al crearlo).
+
+			VIDEO 304 CREANDO LOS COMPONENTES-MODULOS Y RUTAS
+
+Creo los componentes que diga su majestad Fernando.En cuanto a rutas recuerda que van con import y no con require:
+
+const routes: Routes = [
+  {
+    path:'mapas',
+    loadChildren: () => import('./mapas/mapas.module').then( m => m.MapasModule)
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+
+En el modulo hijo crearemos las siguientes rutas:
+
+const routes: Routes = [
+  {
+    path: '',
+    children: [
+      {
+        path: 'fullscreen',
+        component: FullScreenComponent,
+      },
+      {
+        path: 'zoom-range',
+        component: ZoomRangeComponent,
+      },
+      {
+        path: 'marcadores',
+        component: MarcadoresComponent,
+      },
+      {
+        path: 'propiedades',
+        component: PropiedadesComponent,
+      },
+      {
+        path: '**',
+        redirectTo:'fullscreen'
+      },
+
+		VIDEO 305 MENU DE LA APLICACION
+
+Fijate que cuando uso un selector que apuntará a un Component estoy creando una etiqueta HTML y podría apuntar a ella con CSS:
+
+* Podria apuntar con una regla CSS app-menu{ font-size:xxx }
+<app-menu>
+</app-menu>
+<router-outlet>
+</router-outlet>
+* Y recuerda que tengo un archivo de CSS global 'styles.css'
+app-menu{
+ position:fixed;
+ z-index:99999;
+ top:20px;
+ left:20px;
+
+			VIDEO 306 MOSTRAR UN MAPA EN PANTALLA COMPLETA E INSTALAR MAPBOX
+
+Las rutas que hemos creado suelen ser algo básico a la hora de crear una aplicación de mapas.FullScreen será para ver el mapa a pantall completa,zoom-range para poder hacer zoom en él,marcadores para crear marcadores y propiedades para poner algunos mapas pequeños en la misma pantalla.
+Empecemos con el más sencillo que es ver un mapa a fullscreen.Primero que nada defino el token en los environments de Angular:
+
+export const environment {
+  production: false,
+  mapboxToken: "fdsfs"
+* Fijate que es un poco diferente de React,ya que ya está creado el .env e incluso hay dos
+}
+
+En cuanto a instalar MapBox puedo usar su CDN o usar npm .Sea como sea hay que usar su CDN para los estilos.
+>npm i mapbox-gl
+
+Sin embargo para usarla tendré un problema y es que la librería está en Javascript y estamos en Typescript.No hay problema,ya existe una librería enorme que abarca muchas aplicaciones que no fueron tipadas para TS y se dejaron sólo en JS.
+Ese paquete es @types y hay miles de librerias con su tipado para typescript alli.Además que ya me daba la solución el propio VSCode:
+ Try `npm i --save-dev @types/mapbox-gl` if it exists or add a new declaration (.d.ts) file containing `declare module 'mapbox-gl';`ts(7016) <- pues eso:
+>npm i --save-dev @types/mapbox-gl <- dado que compilaré siempre a JS es buena idea usarlo sólo para dev
+*Fijate que cualquier @types debo instalarlo solo en --save-dev,pues nunca va a llegar al JS final 
+
+Aún tendremos otro problema más y es que hay que importar toda la librería como mapbox(es por no usar require??):
+import * as mapboxgl  from "mapbox-gl"; <- ojo con esto
+
+También hay otro problema ya que dejaron mapboxgl como sólo lectura y dará problemas en TS:
+
+* hay que usar (mapboxgl as any).accessToken <- importante
+  ngOnInit(): void {
+    (mapboxgl as any).accessToken = environment.mapboxToken;
+
+    var map = new mapboxgl.Map({
+      container: 'mapa',
+      style: 'mapbox://styles/mapbox/streets-v11',
+    });
+  }
+Además hay que dar 100% de ancho y alto al <div> que cree pues por defecto tendrá 0:
+  styles: [ `
+      #mapa {
+        width: 100%;
+        height: 100%;
+      }
+    `,
+  ],
+
+			VIDEO 307 PUNTO CENTRAL, ZOOM Y ACCESS-TOKEN DE FORMA GLOBAL
+
+Hay muchas cosas que hacer,una será definir un punto central,otra establecer el nivel de zoom, y otra definir varios mapas(como será este caso).
+Deberíamos tratar de establecer esto de manera global.
+Fijate en el flujo de una aplicación de Angular:
+
+platformBrowserDynamic().bootstrapModule(AppModule)
+  .catch(err => console.error(err));
+* Lo primero que va a cargarse es el AppModule,que a su vez va a renderizar el AppComponent como primer componente.
+CUALQUIER COSA QUE PONGA EN EL NGONINIT DE ESE APPCOMPONENT.TS SE VA A RENDERIZAR ANTES QUE CUALQUIER COMPONENTE.Luego ese es el lugar ideal para definir cosas de manera global.
+
+Recuerda que Mapbox trabaja con longitud/latitud a diferencia de GoogleMaps que trabaja con latitud/longitud.
+Asi que para darle un centro inicial voy a GoogleMaps,eligo un lugar y con click derecho veré la ubicación,lo copio pero ojo que hay que revertir el orden en Mapbox:
+las coordenadas de GoogleMaps 43.305257167909865, -3.034301518969713 en Mapbox serán:
+
+			VIDEO 308 TAREA EN EL ZOOM RANGE
+
+La tarea es traer el mapa,ojo que yo le he dado otro id y él no.Despues fijate el diseño tan bonito que crea.
+
+<div class="row">
+    <div class="col-12">
+        <label for="" class="form-label">
+            Zoom:18
+            - Lng,Lat = [123,456]
+        </label>
+        <input type="range" class="form-range" name="" id="customRange1">
+    </div>
+
+    <div class="col-12">
+        <button class="btn btn-primary">
+            -
+        </button>
+        <button class="btn btn-primary float-end">
+            +
+        </button>
+    </div>
+</div>
+
+					VIDEO 309 CONTROLAR EL OBJETO MAPA - ZOOM IN Y ZOOM OUT
+
+De alguna manera necesitamos poder hacer zoom y para ello tenemos que referenciar el mapa.Para ello nos creamos una propiedad en la clase:
+mapa!:mapboxgl.Map; <- ojo que va a ser de este tipo
+
+ 
+  ngOnInit(): void {
+
+    this.mapa = new mapboxgl.Map({
+      container: 'mapa',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-3.034301518969713,43.305257167909865],
+      zoom:16
+    });
+  }
+
+* Las funciones para hacer zoom son realmente sencillas.En el evento (click) del boton de la template disparo estos métodos.
+  zoomOut() {
+    this.mapa.zoomOut();
+  }
+
+  zoomIn() {
+    this.mapa.zoomIn();
+  }
+
+* Volviendo al tema de los ids de cada mapa fijate como Fernando tiene razón y lo mejor es usar una referencia local(la referencia local cambiará con cada componente):
+<div #mapa class="mapa-container"></div> <- en cada componente será diferente
+
+Sin embargo vamos a tener un problema y es que Angular no va a ser capaz de obtener la referenica aa ese div ni en el constructor ni en el ciclo de vida OnInit,asi que usaremos el lifecycle AfterViewInit:
+
+
+  @ViewChild("mapa") divMapa!: ElementRef;
+  
+  mapa!: mapboxgl.Map;
+
+  constructor() {
+  }
+
+  ngAfterViewInit(): void {
+    this.mapa = new mapboxgl.Map({
+      container: this.divMapa.nativeElement,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-3.034301518969713, 43.305257167909865],
+      zoom: 16,
+    });
+  }
+IMPORTANTE: dado que parece que con ViewChild solo puedo rescatar algo de tipo ElementRef(es decir,una referencia) y que la propiedad container necesita un string al id o un HTMLElement tengo que usar this.divMapa.nativeElement que ya es el elemento HTML en sí.
+
+			VIDEO 310 CONTROLAR EL NIVEL DEL ZOOM
+
+Bien,ya podemos hacer zoom,pero ¿como sé el nivel del zoom en el que me encuentro?Para esto esta la documentación.Alli veré el método getZoom que retorna el nivel del zoom actual.Habrá que crearse una propiedad pues:
+zoomLevel:number=10;
+Ya la puedo cambiar en la template y en el constructor new mapboxgl.Map().
+
+Fijate que tenemos problemas con la animación al hacer zoom ya que capturamos los valores de antes de la animación y estamos falseando los datos.
+
+			VIDEO 311 CREANDO LISTENERS PARA EL GETZOOM
+
+Para obtener el valor actual y preciso del zoom necesito poner un listener que me indique cuando el zoom cambia.Para crear un listener la documentación de MapBox nos dirá que es con el método on(type) donde type es click |dbclick | mousemove, focus ...etc
+Nos interesa el evento 'zoom' que es cuando cambia el zoom(también habia zoomend y zoomstart)
+ewInit(): void {
+    this.mapa = new mapboxgl.Map({
+      container: this.divMapa.nativeElement,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-3.034301518969713, 43.305257167909865],
+      zoom: this.zoomLevel,
+    });
+    //mapbox permite crear un listener con .on(accion disparadora)
+    this.mapa.on("zoom", (ev) => {
+      this.zoomLevel = this.mapa.getZoom();
+    })
+
+			VIDEO 312 INPUT TYPE RANGE Y RESTRINGIR ZOOM
+
+Aún no funciona el range y queremos que no se pueda hacer zoom hasta 22(es el máximo y es mucho,con 18-19 vale). Para esto podemos obtener el zoom con getZoom y si es mayor de 18 podemos redirigirlo con zoomTo:
+
+   this.mapa.on("zoomend", (ev) => {
+      if(this.mapa.getZoom() > 18){
+        this.mapa.zoomTo(18)
+      }  
+    })
+En cuanto al range usaremos una funcion que se disparará en el input:
+        <input 
+          type="range"
+          class="form-range"
+          [value]="zoomLevel"
+          min="0"
+          max="19"
+          (input)="zoomChange(zoomInput.value)"
+          #zoomInput
+       >
+* En la clase
+  zoomChange(value: string) {
+   this.mapa.zoomTo(parseFloat(value));
+ }
+
+			VIDEO 313 OBTENER LAS COORDENADAS CENTRALES DEL MAPA
+
+Para obtener las propiedades tendremos que subscribirnos al evento 'move' y crear una propiedad center:[number,number]
+
+    this.mapa.on("move", (ev) => {
+      const { lng, lat }  = ev.target.getCenter();
+      this.center = [lng, lat];
+    })
+  }
+* Solo queda pintarlo en la template
+      <label for="" class="form-label">
+            Zoom:{{zoomLevel | number: '2.2-2'}}
+            - Lng,Lat = [ {{center[0] | number: '2.4-4' }} ,
+             {{center[1] | number:'2.4-4'}} ]
+
+REGLA DE ORO: siempre que cree o tenga EventListeners hay que destruirlos cuando el componente se destruya.Lógicamente tendré que implementar el onDestroy:
+
+  ngOnDestroy(): void {
+
+   this.mapa.off("zoom", () => {}); 
+   this.mapa.off("zoomend", () => {}); 
+   this.mapa.off("move", () => {}); 
+  }
+* La callback como segundo argumento es obligatoria.
+
+				VIDEO 314 MARCADORES
+
+Para agregar marcadores será con new mapbox.Marker()setLngLat().addToMap(mapa):
+
+    const markerHtml: HTMLElement = document.createElement('div');
+    markerHtml.innerHTML = 'Hoa Mundo';
+    new mapboxgl.Marker({element: markerHtml})
+      .setLngLat(this.center)
+      .addTo(this.mapa); 
+
+			VIDEO 315 AGREGAR MARCADORES DE MANERA DINÁMICA
+
+En realidad no quiero que al cargar el mapa se creen marcadores en posiciones estáticas,queremos crearlo cuando suceda algo.También queremos guardar la posición de cada marcador y que al hacer click en él se centre la vista.
+
+* Para agregar marcadores en la template un botón llamará a este método
+  agregarMarcador(): void {
+    const color = "#xxxxxx".replace(/x/g, y=>(Math.random()*16|0).toString(16));
+
+    const nuevoMarcador = new mapboxgl.Marker(
+      {draggable:true,color}
+    )
+      .setLngLat(this.center)
+      .addTo(this.mapa);
+    
+  }
+
+ irMarcador(){} <- por implementar
+Fijate en la regexp para generar codigos hexadecimales,muy interesante.
+
+			VIDEO 316 MANTENER EL ARREGLO DE MARCADORES Y SUS COLORES
+
+Para mantener el arreglo de marcadores y que el <li> se vea del color del marcador vamos a crearnos una interface:
+
+interface MarcadorCustom {
+  color:string;
+  marker: mapboxgl.Marker;
+}
+*Ahora en la clase declaro una propiedad que sea un arreglo de MarcadorCustom:
+
+marcadores: MarcadorCustom[]= [];
+* Cuando se haga click en crear el marcador lo agregamos a este arreglo,guardando el marcador y sus color(dado que Fernando no encontró un método que devuelva el color del marcador en la documentación de Mapbox.
+  
+agregarMarcador(): void {
+    const color = "#xxxxxx".replace(/x/g, y=>(Math.random()*16|0).toString(16));
+
+    const nuevoMarcador = new mapboxgl.Marker(
+      {draggable:true,color}
+    )
+      .setLngLat(this.center)
+      .addTo(this.mapa);
+    
+    this.marcadores.push({color,marker:nuevoMarcador});  <- le agrego el color y el objeto
+  }
+* En la template itero por la colección y le cambio el background-color:
+
+  <li class="list-group-item"
+   (click)="irMarcador()"
+   *ngFor="let marker of marcadores;let i=index"
+   [ngStyle]="{'background-color': marker.color}"
+   >marker {{i+1}}</li>
+</ul>
+Fijate en el uso de la directiva  [ngStyle]="{'propiedad':valor} para pasar una propiedad rápidamente al HTML
+
+			VIDEO 317 IR AL MARCADOR( MÉTODO FLYTO)
+
+Esta libreria permite centrar la cámara en  unas coordenadas dadas con el método flyTo.La verdad es que no es muy complicado:
+
+ irMarcador(marcador:mapboxgl.Marker){
+   this.mapa.flyTo({
+    center:marcador.getLngLat()
+   })
+ }
+En la template simplemente le paso el marcador actual:
+ <li class="list-group-item"
+  *ngFor="let marker of marcadores;let i=index"
+   (click)="irMarcador(marker.marker)"
+   [ngStyle]="{'background-color': marker.color}"
+   >marker {{i+1}}</li>
+
+Dado que queremos no perder los marcadores al refrescar la web,vamos a guardar la data en el localStorage.
+
+			VIDEO 318 GUARDAR Y LEER DEL LOCALSTORAGE
+
+Si bien lo normal sería usar un backend por motivos de simplicidad usaremos el localStorage.Para comenzar con esto debo comprender que en el localStorage sólo puedo grabar strings,o grabar un objeto serializado como un string,pero el problema es que el marcador éste es muy grande.
+Con extraer la posición central,la long y lat y el color será suficiente
+
+* El método de guardar no tiene nada,salvo que no queremos guardar todo el objeto mapboxgl.Marker
+ guardarMarcadoresLocalStorage(){
+   const lngLatArr: MarcadorCustom[]=[];
+
+    this.marcadores.forEach( m => {
+      const color = m.color;
+      const { lng, lat } = m.marker!.getLngLat();
+      lngLatArr.push({color,centro:[lng,lat]});
+    })
+
+    localStorage.setItem("marcadores",JSON.stringify(lngLatArr));
+ }
+
+* El de leer marcadores es igual de fácil,claro que hay que volver a crear marcadoress segun lo guardado:
+
+ leerMarcadoresLocalStorage(){
+   if(!localStorage.getItem("marcadores")){
+     return;
+   }
+   const lngLatArr: MarcadorCustom[]=JSON.parse(localStorage.getItem("marcadores")!);
+
+   lngLatArr.forEach(m => {
+      const newMarker = new mapboxgl.Marker({
+        draggable:true,
+        color:m.color})
+      .setLngLat(m.centro!)
+      .addTo(this.mapa);
+
+     this.marcadores.push({
+        marker:newMarker,
+        color:m.color,
+      }) })
+  
+ }
+* Aún nos falta guardar al actualizar un marcador su nueva posición,aunque puedo notar que crear un nuevo marcador si guardará los desplazados,dado que todos los objetos son pasados por referencia en Javascript.Fijate que hay que guardarlos también en el arreglo de Markers.
+Por cierto,este método se llama en el AfterViewInit:
+
+  ngAfterViewInit(): void {
+    this.mapa = new mapboxgl.Map({
+      container: this.divMapa.nativeElement,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: this.center,
+      zoom: this.zoomLevel,
+    });
+
+    this.leerMarcadoresLocalStorage()
+Aún nos falta poder borrarlos y actualizar sus centros.
+				
+				VIDEO 320 BORRAR Y ACTUALIZAR MARCADORES
+
+Realmente es bastante sencillo actualizar los marcadores.Simplemente cuando el usuario deje de arrastrar un marcador guardamos los centros de nuevo:
+
+* Agrego esto tras leer los marcadores del LS  y tras crear un marcador:   
+   newMarker.on("dragend", () => {
+        this.guardarMarcadoresLocalStorage();
+      })
+Para borrar un marcador lo haremos al hacer doble click asi que le pasamos el evento desde la template con el indice:
+   (dblclick)="borrarMarcador(i)"
+* Ojo,que es dblclick con 'l'.
+
+Nos hará falta borrarlo de dos lugares,del mapa y del localStorage.
+Recuerda que splice(posicion,elementos a recortar) me permite eliminar un objeto de un array en una posicion 
+numeros.splice(i,1) <- en la posicion i me quitas el siguiente.Posicion empieza desde 0.Asi pues:
+numeros.splice(0,1) <- quitará el primero
+numeros.splice(1,1) <- quitará el segundo
+numeros.splice(4,1) <- quitará el quinto,etc.Obviamente los primeros y últimos ya tengo métodos JS predefinidos.
+
+* Para borrar un mapboxgl.Marker tengo el método remove:
+
+ borrarMarcador( i:number ) {
+   this.marcadores[i].marker?.remove();
+   this.marcadores.splice(i,1); 
+   this.guardarMarcadoresLocalStorage();
+ }
+
+			VIDEO 321 LISTA DE PROPIEDADES - DISEÑO Y  ESTRUCTURA DE LOS DATOS
+
+Queremos poder crear múltiples instancias del mapa y poder guardarlas con sus marcadores.Crearemos una card con un pequeño mapa y un titulo y una descripcion:
+         <div class="col-4 mb-2" *ngFor="let propiedad of propiedades ">
+            <div class="card">
+               <img src="" alt="" class="card-img-top">
+               <div class="card-body">
+                  <h5 class="card-title">{{ propiedad.titulo}}</h5>
+                  <p class="card-text">{{ propiedad.descripcion }}</p>
+               </div>
+            </div>
+         </div>
+
+En vez de la imagen lo que haremos será usar un minimapa.De echo,ya habiamos creado este componente!.
+* Fijate que le estamos pasando una propiedad igual que en React:
+<img> por  <app-minimapa [lngLat]="propiedad.lngLat"  class="card-img-top"></app-minimapa>
+* Para rescatarla hará falta el decorador @Input.
+
+export class MinimapaComponent implements AfterViewInit {
+
+  @Input() lngLat: [number, number] = [0,0];
+  @ViewChild('mapa') divMapa!: ElementRef;
+  mapa!: mapboxgl.Map;
+
+  constructor() {}
+
+  ngAfterViewInit(): void {
+    this.mapa = new mapboxgl.Map({
+        container:this.divMapa.nativeElement,
+        style:"mapbox://styles/mapbox/streets-v11",
+        center: this.lngLat,
+        zoom:15,
+        interactive:false,
+    });
+
+    new mapboxgl.Marker()
+      .setLngLat(this.lngLat)
+      .addTo(this.mapa)
+  }
+}
+* En la template un <div #mapa> hará el resto.Fijate que es más sencillo de lo que parecía y el juego que da todo esto.
+
+

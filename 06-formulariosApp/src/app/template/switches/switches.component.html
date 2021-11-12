@@ -1,0 +1,101 @@
+<h2>Template: Switches</h2>
+<hr />
+
+<form #miFormulario="ngForm">
+  <!-- radio buttons -->
+  <div class="row mb-3 d-flex align-items-center">
+    <label for="" class="col-sm-3 col-form-label">Género</label>
+    <div class="col-sm-9">
+       <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="radioGenero"
+          value="M"
+          [(ngModel)]="persona.genero"
+          id="radioMasculino"
+          required
+        />
+        <label class="form-check-label" for="radioMasculino"> Masculino </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          value="F"
+          [(ngModel)]="persona.genero"
+          name="radioGenero"
+          id="radioFemenino"
+          required
+        />
+        <label class="form-check-label" for="radioFemenino"> Femenino </label>
+      </div>
+    </div>
+  </div>
+  <!-- fin radio buttons -->
+
+  <!-- switches ( slider horizontal tipo ON-OFF ) -->
+  <div class="row mb-3 d-flex align-items-center">
+    <label for="" class="col-sm-3 col-form-label">Notificaciones</label>
+    <div class="col-sm-9">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="switchNotificaciones"
+          name="notificaciones"
+          [(ngModel)]="persona.notificaciones" 
+         required
+        />
+        <label class="form-check-label" for="switchNotificaciones"
+          >Quiero recibir notificaciones</label
+        >
+      </div>
+    </div>
+  </div>
+  <!-- fin switches -->
+
+  <!-- checkbox (casilla de aceptación estilo Terminos y Condiciones o He leido los terminos y condiciones...)  -->
+  <div class="row mb-3 d-flex align-items-center">
+    <label for="" class="col-sm-3 col-form-label">Términos y condiciones</label>
+    <div class="col-sm-9">
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="checkboxTerminos"
+          [(ngModel)]="terminosYCondiciones"
+          name="terminos"
+          required
+        />
+        <label class="form-check-label" for="checkboxTerminos" >
+          He leido y acepto todo sin mirar 
+        </label>
+      </div>
+    </div>
+  </div>
+  <!-- fin checkbox -->
+  <!-- submit -->
+  <div class="row d-flex justify-content-center">
+     <div class="col-md-6">
+        <button type="submit" 
+        class="btn btn-primary w-25"
+        [disabled]="!miFormulario.valid"
+        >Guardar</button>
+     </div>
+  </div>
+</form>
+
+<h5>Valor del formulario</h5>
+<pre>{{ miFormulario.value | json }}</pre>
+<br>
+
+<h5>Valid</h5>
+<pre>{{ miFormulario.valid }}</pre>
+<br>
+
+<h5>Terminos</h5>
+<pre>{{ miFormulario.controls?.terminos?.errors | json}}</pre>
+<br>
+
+<pre>Condiciones: </pre>

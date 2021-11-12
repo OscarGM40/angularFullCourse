@@ -1,0 +1,272 @@
+				NESTED ROUTES AND LAZY LOADING IN ANGULAR
+
+Source: https://www.freakyjolly.com/angular-nested-routing-with-multiple-routeroutlet-using-loadchildren-having-own-router-modules-example-application/
+
+Vamos a crear una aplicación con tres niveles de anidación de rutas y llamar a los componentes en tiempo de ejecución(lazy loading).
+Será una app demo de HHRR.Los niveles de navegación estarán distribuidos así:
+
+Level 1:
+- Dashboard(default page)
+- My Profile
+- My Attendance
+- My leaves -> esta tiene level 2
+
+Level 2:MyLeaves tiene estas rutas:
+- Apply Leave
+- Check Leave Balance -> esta tiene hijas
+
+Level 3: Check Leave Balance tiene estas rutas:
+- Casual
+- Earned
+- Bad Link
+
+1- Cada nivel tendrá su propio <router-outlet> para ver el componente del path activo
+2- RouterModules separados y Componentes: dos componentes hijos Leaves y Balance tendrán su propio RoutingModule y Component haciendo el lazyLoading posible.
+3- Manejaremos el 404 Page Not Found en cada nivel.En cada nivel vamos a proteger la app de crasheos con la wildcard '**' redirigiendo a un componente 404.Empecemos,peazo prehistoric params:
+
+>npm i update @angular/cli @angular/core
+>ng new AngularNestedRouting
+
+					ESTRUCTURA 
+
+Level 1:
+$ ng g c attendance --skipTests=true
+$ ng g c dashboard --skipTests=true
+$ ng g c leaves --skipTests=true
+$ ng g c page404 --skipTests=true
+$ ng g c profile --skipTests=true
+Level 2:
+$ ng g c leaves/apply --skipTests=true
+$ ng g c leaves/balance --skipTests=true
+$ ng g c leaves/page404leaves --skipTests=true
+Level 3:
+$ ng g c leaves/balance/casual --skipTests=true
+$ ng g c leaves/balance/earned --skipTests=true
+$ ng g c leaves/balance/page404balance --skipTests=true
+Ahora tenemos los componentes preparados en el app.routing.module.ts que creamos con el routing a yes del angular/cli.
+
+AÑADIENDO <router-outlet> DIRECTIVE A CADA NIVEL
+La directiva RouterOutlet se emplaza  en la template del componente padre donde otros componentes son cargados durante el Routing o navegación de una vista a otra.Dado que en nuestra aplicación tenemos tres niveles de jerarquía de componentes padre,añadiremos la directiva RouterOutlet  en tres lugares.
+Por defecto siempre se añade en el app.component.html,que es el componente main de la aplicación(aunque no se añade sola xd)
+*En el app.component.html
+<ul>
+  <li>
+    <a [routerLink]="'/'" routerLinkActive="active"> Dashboard </a>
+  </li>
+  <li>
+    <a [routerLink]="'/profile'" routerLinkActive="active"> My Profile </a>
+  </li>
+  <li>
+    <a [routerLink]="'/attendance'" routerLinkActive="active"> My Attendance </a>
+  </li>
+  <li>
+    <a [routerLink]="'/leaves'" routerLinkActive="active"> My leaves </a>
+  </li>
+</ul>
+<router-outlet></router-outlet>
+* Aqui tenemos enlaces a otros componentes que serán cargados en el RouterOutlet.La directiva routerLink se usa para navegar.La directiva routerLinkActive se usa para estilizar el link activo.Para el nivel Dos abro el app/leaves/leaves.component.html y uso los siguientes links y directivas:
+<h3>Leaves</h3>
+<ul>
+  <li>
+    <a [routerLink]="'apply'" routerLinkActive="active"> Apply Leave </a>
+  </li>
+  <li>
+    <a [routerLink]="'balance'" routerLinkActive="active">
+      Check Leave Balance
+    </a>
+  </li>
+</ul>
+<router-outlet></router-outlet>
+La tercera RouterOutlet irá en el app/leaves/balance/balance.component.html:
+<h5>Check Balance</h5>
+<ul>
+    <li>
+      <a [routerLink]="'casual'" routerLinkActive="active">Casual</a>
+    </li>
+    <li>
+      <a [routerLink]="'earned'" routerLinkActive="active">Earned</a>
+    </li>
+    <li>
+      <a [routerLink]="'earnedxyz'" routerLinkActive="active">Bad Link</a>
+    </li>
+  </ul>
+  <router-outlet></router-outlet>
+* Fijate que él ha empezado con /ruta pero en el nivel 2 y 3 ya solo uso 'subruta' y no '/subruta'.
+	
+				MODULARIZAR LA APP
+
+El concepto principal de Angular es la habilidad para mantener modulos y la reusabilidad,lo que hace cada componente independiente y separado del resto de la aplicación.Haremos que los componentes Leaves y Balance carguen en runtime añadiendoles su propio routerModule  
+Lazy Loading: el concepto de carga perezosa se ha mostrado muy útil en optimizar grandes aplicaciones que escalan a niveles complejos  y tienen varios niveles de jerarquía de componentes.
+Los componentes que usen lazy-loading son empaquetados(crean el bundle) y cargados 'on demand'(bajo petición).Este concepto mantiene las aplicaciones ligeras y optimizadas.
+En Angular convertir un simple componente en un componente optimizado por lazy-load se hace creandole su propio modulo.Por ejemplo,para hacer Leaves un componente lazy-loaded,le añado el archivo leaves.module.ts en él.
+
+			CREAR MODULOS Y MODULOS DE ROUTING PARA COMPONENTES HIJOS
+
+Creemos modulos para Leaves y su hijo Balance.Lo haremos desde CLI:
+>ng g m leaves --routing
+>ng g m leaves/balance --routing
+
+
+
+IMPORTANTISIMO: Los componentes son declarados en el modulo que los pida,asi que tengo que quitarlos del app.module.ts ya que tiene todos de momento:
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { AttendanceComponent } from './attendance/attendance.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { Page404Component } from './page404/page404.component';
+import { ProfileComponent } from './profile/profile.component';
+// import { ApplyComponent } from './leaves/apply/apply.component';
+// import { BalanceComponent } from './leaves/balance/balance.component';
+// import { Page404leavesComponent } from './leaves/page404leaves/page404leaves.component';
+// import { CasualComponent } from './leaves/balance/casual/casual.component';
+// import { EarnedComponent } from './leaves/balance/earned/earned.component';
+// import { Page404balanceComponent } from './leaves/balance/page404balance/page404balance.component';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    AttendanceComponent,
+    DashboardComponent,
+    Page404Component,
+    ProfileComponent,
+    // ApplyComponent,
+    // BalanceComponent,
+    // Page404leavesComponent,
+    // CasualComponent,
+    // EarnedComponent,
+    // Page404balanceComponent
+  ],
+Fijate que no tiene ni leaves ni lo que esta a su nivel o inferior.Actualizo esos modulos leaves.module y balance.module declarando los componentes alli:
+import { LeavesRoutingModule } from './leaves-routing.module';
+import { LeavesComponent } from './leaves.component';
+import { ApplyComponent } from './apply/apply.component';
+import { Page404leavesComponent } from './page404leaves/page404leaves.component';
+
+
+@NgModule({
+  declarations: [
+    LeavesComponent,
+    ApplyComponent,
+    Page404leavesComponent
+  ],
+  imports: [
+    CommonModule,
+    LeavesRoutingModule,
+  ]
+})
+export class LeavesModule { }
+
+			ACTUALIZAR LOS ROUTING.MODULE.TS
+
+Por último queda actualizar los archivos de rutas con las rutas e importaciones de Modulos:
+
+//app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { ProfileComponent } from './profile/profile.component';
+import { AttendanceComponent } from './attendance/attendance.component';
+import { Page404Component } from './page404/page404.component';
+
+const routes: Routes = [
+    { path: 'dashboard', component: DashboardComponent },
+    { path: 'profile', component: ProfileComponent },
+    { path: 'attendance', component: AttendanceComponent },
+    { path: 'leaves', loadChildren: () => import(`./leaves/leaves.module`).then(m => m.LeavesModule) },
+    { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    { path: '**', component: Page404Component },
+];
+@NgModule({
+    imports: [
+        RouterModule.forRoot(routes,{ enableTracing: false })
+    ],
+    exports: [RouterModule]
+})
+export class AppRoutingModule { }
+*En este código hay rutas definidas con y sin lazy-load.Para 'leaves' usamos la propiedad loadChildren para definir el path del modulo que va a ser cargado perezosamente.Anterior a Angular 8 se cargaban los módulos asi:
+{ path: 'leaves', loadChildren: './leaves/leaves.module#LeavesModule' }
+* Esto no permitia detección en tiempo real de errores,con la nueva sintaxis loadChildren:()=> import().then() si que se detecta si hay un error en el modulo importado
+La propiedad Component simplemente carga los componentes al cargar la app(es lo que queremos evitar con loadChildren+modulo).
+Basicamente lo que decimos es que el componente leaves es responsable de su modulo y lo usará para cargarse a él y otros componentes(los que declare en el array declarations de ese modulo).
+Es decir que al redirigirme a /leaves se cargaran Leaves,Apply,Page404Leaves,.. los que esten declarados en ese modulo)Y fijate que no se cargarán Balance,Page404Balance,etc... Cada módulo con lo suyo.
+Continuo con el modulo leaves.routing.ts:
+//leaves-routing.module.ts
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+import { ApplyComponent } from './apply/apply.component';
+import { LeavesComponent } from './leaves.component';
+import { Page404leavesComponent } from './page404leaves/page404leaves.component';
+
+* Fijate que ApplyComponent y Page404leavesComponent
+  vendrán junto con Leaves al redirigirse hacia /leaves pero BalanceComponent no,pues es responsabilidad de BalanceModule 
+
+const routes: Routes = [
+  {
+    path: '', component: LeavesComponent, children: [
+      {
+        path: 'apply', component: ApplyComponent
+      },
+      { path: 'balance', loadChildren: () => import(`./balance/balance.module`).then(m => m.BalanceModule) },
+      {
+        path: '', redirectTo: 'apply', pathMatch: 'full'
+      },
+      { path: '**', component: Page404leavesComponent }
+    ]
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class LeavesRoutingModule { }
+
+
+Fijate en estos estandares:
+
+const routes: Routes = [
+  { path:"",component:LeavesComponent,
+  children: [
+   { path:"appy",component:ApplyComponent},
+   { path:"balance", loadChildren:()=>import("./balance/balance.module").then(m=>m.BalanceModule)},
+   { path:"",redirectTo:"apply",pathMatch:"full"},
+   { path:'**', component:Page404leavesComponent}
+  ]}
+];
+El primer routing.module no va a usar la propiedad children, ya que es el padre,solo usará Component o loadChildren para cargar un modulo perezosamente.
+Pero a partir del segundo nivel, o primer hijo,las rutas se declaran con children,todo se declara dentro del array children en cuanto sean rutas hijas.Fijate en ese pathMatch a full también.
+
+De forma similar completo el balance.routing.ts:
+//balance-routing.module.ts
+import { NgModule } from '@angular/core';
+import { Routes, RouterModule } from '@angular/router';
+import { BalanceComponent } from './balance.component';
+import { CasualComponent } from './casual/casual.component';
+import { EarnedComponent } from './earned/earned.component';
+import { Page404balanceComponent } from './page404balance/page404balance.component';
+
+
+const routes: Routes = [
+  {
+    path: '', component: BalanceComponent, children: [
+      
+      {
+        path: 'casual', component: CasualComponent
+      },
+      {
+        path: 'earned', component: EarnedComponent
+      },
+      {
+        path: '', redirectTo: 'casual', pathMatch: 'full'
+      },
+      { path: '**', component:  Page404balanceComponent}
+    ]
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class BalanceRoutingModule { }
+Solo queda arrancar la aplicacion.Destacar que es mucho más fácil de lo que pensaba.

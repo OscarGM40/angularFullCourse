@@ -1,0 +1,406 @@
+			SECCION 07 APLICACION DE GIFS
+
+Vamos a realizar una aplicación un poco más compleja,vamos a consumir un servicio,ese servicio nos va a traer unas imágenes,nosotros vamos a procesar esas imágenes,vamos a hacer buscadores,vamos a mantener la información en el localStorage.
+Veremos como hacer la información persistente también en el localStorage,cual es la diferencia entre sessionStorage y localStorage,veremos un par de ciclos de vida de Angular y seguiremos trabajando en base a módulos.
+La API es muy usada para mostrar Gifs.
+También veremos el decorador de propiedades ViewChild
+Queremos ver también como se trabaja en una aplicación de verdad.
+Se recomienda usar el paquete de Angular HttpClient en vez de la api fetch de Js porque el módulo de Angular crea Observables(objetos que están escuchando u observando por algo)
+
+¿Qué veremos en esta sección?
+
+La sección contendrá nuestra primera aplicación real de Angular, este es un breve listado de los temas fundamentales:
+
+1- Modularización de la aplicación
+2- Estructura de la aplicación de media a gran escala
+3- Componentes
+4- ViewChild
+5- Servicios
+6- Historial de búsquedas
+7- Uso de Api Keys
+8- LocalStorage
+9- Peticiones HTTP
+10- Animaciones mediante css
+
+				VIDEO 75 INICIO DEL PROYECTO
+
+Creamos un nuevo proyecto.De momento sin rutas y con CSS:
+>ng new gifsApp
+Importamos la CDN de Bootstrap 5 y borramos todo el html del app.component.html.
+
+						VIDEO 76 DISEÑO INICIAL
+
+De momento hacemos una pequeña maquetación básica con Bootstrap.
+Repaso a bootstrap:
+class="d-flex" <- pone en flex
+
+<div class="list-group list-reset">
+  <a class="list-group-item list-action" href="#">Dashboard</a>
+</div>
+
+"list-reset" quita los bullets
+"list-group-item-action" permite clickar en el list item
+
+					VIDEO 77 MODULO SHARED
+
+Ninguna aplicación debería tener todo en el AppComponent.Siempre hay que modularizar,por ejemplo,el sidebar va a tener el objetivo único de mostrar el historial de busquedas.Despues del sidebar va a estar la parte de busqueda y otra parte donde se muestra el resultado de esta imagen.
+Por lo menos vemos dos módulos,uno el usualmente conocido como 'shared' que tiene todos los componentes compartidos de la aplicación(navbar,sidebar,footer o un componente que este en toda la aplicación)  y luego habrá otro módulo relacionado sólo con los gifs.
+Tarea:
+1- crear módulo shared.module.ts colgando de app
+2- crear componente sidebar.component.ts con el html del sidebar que ya está en la template del componente app en el nuevo modulo
+3- exportar el sidebar a traves de su modulo shared
+4- importar el modulo shared en el principal
+5- poner el nuevo selector <app-sidebar>
+
+Nota: fijate que él uso las flags --skip-tests y -is (inlineStyle,so don't generate the file.css)
+
+				VIDEO 78 MODULO GIFS Y SUS COMPONENTES
+
+Nota:fijate lo importante que es tomarse un tiempo para estructurar la aplicación antes de ni siquiera empezarla.
+Recuerda que vamos a hacer dos componentes,el sidebar y el gifPage.Asi que creo otro submodulo,lo importo en el principal y creo un componente que exporto en ese submodulo.Le pego el html que ya tenia e,importante,podría ahorrarme un div ya que tengo todo dentro de un div y solo necesito la clase "container" (fijate que entonces un selector de Angular es un divisor de bloque)
+>ng g m gifs <- que cuelgue de app
+<ng g c gifs/gifs-page
+* Importo y exporto lo necesario y ahora este componente que es el sidebar de la derecha quiero dividirlo en los dos subcomponentes que ya dijimos,la barra de busqueda y otro subcomponente que será cada meme encontrado:
+>ng g c gifs/busqueda --skip-tests -is
+
+Creo el otro componente que lo llamaremos resultados:
+2-gifsApp$ ng g c gifs/resultados --skip-tests -is
+CREATE src/app/gifs/resultados/resultados.component.html (25 bytes)
+CREATE src/app/gifs/resultados/resultados.component.ts (263 bytes)
+UPDATE src/app/gifs/gifs.module.ts (512 bytes)
+
+*Fijate como me esta diciendo qué módulo ha actualizado en la parte del array declarations y todo.
+
+Como són componentes internos al modulo en el que estan no necesito exportarlos.IMPORTANTE
+Nota: en las templates puedo dar tabulaciones o empezar en la linea 10 etc... para mayor comodidad,pues los espacios en el código van a ser ignorados.
+
+			VIDEO 79 @ViewChild OBTENER REFERENCIAS A OBJETOS HTML
+
+En este video queremos rescatar el texto del input y también poder resetear el cuadro de busqueda.Hay muchas maneras de hacer esto,podriamos usar el FormsModule o el ngModule,pero Fernando no quiere importar todo el modulo interno FormsModule para una sola caja de texto.
+Sin embargo al no usar ayuda del módulo vamos a tener algun problema para limpiar la caja de texto.
+Fijate que necesitamos referenciar de alguna manera el input.En Javascript puro podriamos usar un document.querySelector o getElementById,etc...
+
+Pero Angular tiene otro decorador muy interesante que es @ViewChild.También viene de @angular/core.La sintaxis es :
+
+@ViewChild('nombre del elemento que quiero buscar') <- puedo buscar por clases,directivas pero vamos a usar la referencia local.Recuerda que una referencia local existe sólo en el HTML y es un simple nombre que le doy a un elemento :
+<input 
+  type="text"
+  placeholder="Buscar gifs..."
+  (keyup.enter)="buscar("txtBuscar.value";)
+  #txtBuscar />
+
+					TEMPLATE VARIABLES(REFERENCIAS LOCALES)
+
+Las template variables(variables de plantilla) me permiten usar datos de una parte de la template en otra parte de la misma(recuerda que son referencias a la template en la que están,son locales).
+Con las template variables puedo realizar tareas como responder al input de un usuario o ajustar finamente los formularios de mi aplicación
+Una template variable puede referirse a los siguientes elementos:
+1- un elemento del DOM dentro de la template
+2- una directiva
+3- un elemento
+4- Una TemplateRef
+5- un componente Web
+
+En la template,usa el simbolo hash para declarar una variable template.La siguiente template variable, #phone declara la variable 'phone' en un elemento <input>:
+<input #phone placeholder="phone number" />
+Ahora puedo referirme a la variable en cualquier lugar de la template del componente.Por ejemplo, un botón un poco más abajo:
+<input #phone placeholder"...
+.... more code ...
+<button (click)="callPhone(phone.value)">Call to Police </button>
+
+Angular asigna la variable dependiendo de donde la declares:
+1- si la declaro en un componente,la variable se refiere a la instancia del componente
+2- si declaro la variable en una tag HMTL estandar,la variable se refiere al elemento HMTL(al input,a,h3,li,...)
+3- si la declaro en un <ng-template>,la variable se refiere a la instancia TemplateRef,que representa esa etiqueta(es decir,que se refiere a esa etiqueta simplemente)
+4- si la variable especifica un nombre en la parte derecha,tal como #var="ngModel",la variable se refiere a la directiva o componente en el elemento con el nombre 'exportAs' coincidente.
+
+Las directivas estructurales ngIf ngFor actuan como barrera,creando un limite,asi pues:
+
+<input #ref1 type=text [(ngModel)]="firstExample"> <- fijate que la directiva está mas a la derecha
+<span *ngIf="true">{{ref1.value}}</span>
+
+En este caso hay una <ng-template> implicita rodeando al span y la definición de la variable está afuera.Una forma más verbosa de ver esto sería:ç
+<input #ref1 type="text" [(ngModel)]="firstExample" />
+
+ <ng-template [ngIf]="true">
+  <span>Value: {{ ref1.value }}</span>
+</ng-template> Como viene de fuera esta disponible el valor ref1.value
+
+*Esto no funciona porque el valor de ref2 esta encapsulado y el span no lo ve
+<input *ngIf="true" #ref2 type="text" [(ngModel)]="secondExample" />
+<span>Value: {{ ref2?.value }}</span>
+
+Volviendo a la aplicacion usaremos el evento (keyup.enter)="" que se ejecuta al pulsar el enter:
+<input
+   type="text"
+   placeholder="Buscar gif..."
+  (keyup.enter)="buscar();"
+  #txtBuscar />
+
+Fijate que este aproach es sólo para ver el decorador,lo más fácil hubiera sido usar (keyup.enter)="buscar($event.target.value)" o incluso más fácil con (keyup.enter)="method(refLocal.value) usando una referencia local hacia ese input.
+
+Volviendo al decorador:
+export class BusquedaComponent {
+
+  @ViewChild('refLocal') txtBuscar! : ElementRef<HTMLInputElement>;
+
+  buscar(){
+  const valor = this.txtBuscar.nativeElement.value;
+  console.log(valor);
+  this.txtBuscar.nativeElement.value = '';
+ }
+}
+
+Si bien puede que la aproximación sea mas compleja de lo necesario explica perfectamente como @ViewChild referencia un elemento de la template.Investigar más sobre este decorador
+
+						VIDEO 80 GIFS SERVICE
+
+Vamos a crear un servicio para almacenar la data de ese input.Esta vez lo vamos a hacer desde cli y en esta ruta:
+>ng c s gifs/services/gifs --skip-tests
+Veré que sólo crea el archivo,pero no actualizó nada:
+
+@Injectable({
+  providedIn: 'root'
+})
+export class GifsService {
+
+  constructor() { }
+}
+* La propiedad providedIn permite que los servicios puedan estar definidos en el momento en que se construye el bundle de la aplicación.Usar este 'providedIn:'root' le dice a Angular que no importa en que parte de la aplicación este este archivo/servicio,porque el servicio va a ser único y de manera global en la aplicación.Esto es genial porque evita que yo tenga que especificarlo en los providers
+* NOTA IMPORTANTE: si lo especifico en el array Providers[] del decorador @NgModule del módulo entonces el servicio pasará a ser local a ese módulo.
+Usualmente lo que querremos es que Angular lo eleve de manera global con la propiedad providedIn:'root' del objeto que lleva por argumento el decorador @Injectable,asi que no debo tocar nada si lo quiero global
+
+Volviendo al tema,queremos almacenar los strings en un historial,que lógicamente será un array de strings
+
+export class GifsService {
+
+  private _historial:string[]=[];
+
+  get historial(){
+    return [... this._historial]; <- recuerda romper la referencia
+  }
+
+	*creo un método cualquiera que añada el input.value al principio del array
+	buscarGifs(query:string){
+    this._historial.unshift( query);
+  }
+}
+
+Inyecto el servicio en el constructor del componente busqueda y cuando tenga el valor,es decir en el método agregar, llamo a este servicio.
+
+* Tarea:
+necesitamos consumir este arreglo(fijate que tengo el getter) para crear componentes en el sidebar.
+Realmente el arreglo lo veo desde toda la aplicación asi que inyecto el servicio en el constructor y fijate que tengo que crearme un getter:
+
+get historial(){
+ return this.gifsService.historial;
+}
+
+Simplemente itero con un *ngFor="let item of historial".Recuerda que el servicio está de forma global con el providedIn:'root';
+
+				VIDEO 81 CONTROLAR EL HISTORIAL DE BUSQUEDA
+
+En este video vamos a controlar que no haya más de 10 elementos en el historial y que no se puedan meter duplicados.Podemos crear la lógica tanto en el servicio,antes de insertar al array 'historial' o despues de implementar el servicio.
+
+  buscarGifs( query:string ) {
+    
+    if(!this._historial.includes(query)){
+      this._historial.unshift(query);
+    }
+
+    this._historial = this._historial.splice(0,10);
+    console.log(this._historial )
+  }
+* Comprobamos que el array historial no incluya ya el string y si no lo incluye si que lo insertamos.Despues lo cortamos a 10 posiciones o las que se desee.
+También normalizamos los datos para que sólo se busque una vez (que DBZ sea == dbz)
+>query = query.trim().toLocaleLowerCase();
+Además vamos a usar un pipe para capitalizar porque estamos en Angular.El pipe se llama titlecase.Asi que en el *ngFor lo usamos:
+<a *ngFor="let item of historial">
+{{ item | titlecase }}
+NOTA: a pesar de que en el arreglo veré todo en minúscula en la vista se verá capitalizado.Los pipes no hacen modificaciones a la data,solo la manipulan de forma visual.
+
+					VIDEO 82 GIPHY API KEY 
+
+Vamos a consumir una API de memes muy conocida.Su URL es https://developers.giphy.com/
+Puedo hacer en login si tengo cuenta o en sign up si no tengo.
+Aunque yo ya tengo una me creo otra.
+Una vez tenga la key la voy a almacenar en el servicio,fijate que es un lugar ideal para almacenarla como una propiedad. 	
+En la propia web me dirá a que endpoints puedo apuntar.
+De momento apuntaremos a api.giphy.com/v1/gifs/search/api_key=ff&q=
+Además que vamos a tener que usar varios queryParams con nombres ya fijados por esta API,como api_key,q(para la query),offset para paginaciones.
+
+			VIDEO 83 REALIZAR UNA PETICION HTTP
+
+Podemos usar la API FETCH de Javascript con async o con Promesas síncronas perfectamente:
+
+fetch(`https://api.giphy.com/v1/gifs/search?api_key=${ this.apiKey }&q=${ query }`).then(resp=>resp.json().then(data=>console.log(data)))
+
+Incluso sería mejor declarar el método como async y hacer 
+const resp = await fetch(...)
+const data = await resp.json()
+console.log(data)
+* Esto es mucho más limpio,pero Angular nos ofrece el objeto http del módulo HttpClient.
+Lo primero es importarlo,lo haremos de manera global en el app.module.ts en el array imports.No parece que se autoimporte.Es un módulo que viene de @angular/common/http
+import { HttpClientModule } from '@angular/common/http';
+
+imports: [ 
+   ----external imports----
+   HttpClientModule,
+   --- internal imports ----
+* importante seguir un orden en el array de importaciones(externas,internas).
+HttpClientModule: realiza peticiones HTTP.Este servicio está disponible como una clase inyectable,con métodos para realizar peticiones.
+Esta clase se llama HttpClient y también viene de @angular/common/http
+Asi pues la inyecto en el constructor del servicio GifsService,que es el que va a realizar peticiones:
+
+*constructor (private http: HttpClient ) {}
+
+La diferencia es que ahora las peticiones van a trabajar en base a Observables,que son más poderosos que las promesas(el Observable por lo general tiene mayor control que la promesa).
+También la clase HttpClient me permite configurar headers,etc...
+Esta clase en vez de usar .then cuando este la peticion usará .subscribe.El subscribe se va a ejecutar cuando se tenga la resolución del get.
+
+this.http.get(url).subscribe(resp => { console.log(data}
+*Fijate que ya hizo el json del ResponseStream internamente.
+Al retornar Observables se puede mapear la respuesta,disparar funciones u otras peticiones,etc... Es muy conveniente usar su modulo
+
+			VIDEO 84 MOSTRAR LOS RESULTADOS EN PANTALLA
+
+Vamos a almacenar la data en el servicio,como una propiedad pública(porque nos da igual si la manipulan.De momento no le ponemos tipo.
+Fijate que la propiedad va a ser alimentada cuando se haga la petición,y la petición se hace al llamar a buscarGifs que lo implementa el componente aja de texto y lo llama al buscar.
+Asi que esta propiedad la podría llamar el componente que va a ser un Gif inyectandole el servicio:
+
+export class ResultadosComponent  {
+
+  get resultados() {
+    return this.gifsService.resultados;
+  }
+  
+  constructor( private gifsService: GifsService ) { }
+
+}
+
+Ya puedo renderizarlo en la template,sin embargo,al no haberle puesto tipado no veré sus propiedades(aunque podría ir a la consola y ver lo que devuelve la Response)
+
+<div class="row">
+    <div *ngFor="let gif of resultados"
+     class="col-md-4 col-sm-6"> 
+        <div class="card">
+            <img [src]="gif.images.downsized_medium.url" [alt]="gif.title" class="card-img-top" >
+            <div class="card-body">
+                <p class="card-text">
+                    {{ gif.images.downsized_medium.url}}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+* [src] es un Object binding de Angular.Enlaza todo,arrays,objetos,strings
+NOTA: [...]="..." is for object binding while ...="{{...}}" is for binding with string interpolation. If you want to bind a string it doesn't matter what you use. If you want to bind an object or array value you need to use `[...]="...".
+No uses atr="{{}}" puede dar fallos y es solo para strings,aunque falle el navegador intentará descargar la imagen
+
+			VIDEO 85 COLOCANDO TIPADO A LAS PETICIONES
+
+Typescript no tiene manera de saber que propiedades tiene la respuesta,esto es un error podria escribir una propiedad mal y no dar error alguno,simplemente dejar la pantalla en blanco.
+Fernando provee una web para sacar la clase de la petición,que fijate que es un JSON,asi que la web es un conversor de JSON a clase Typescript.
+Su URL es https://app.quicktype.io/ (quicktype.io)Hay extensiones VSC también.
+Asi pues pego la respuesta en el lado izquierdo y le pongo como nombre de la clase SearchGifsResponse
+En option le cambio el lenguaje a Typescript y le pongo Interfaces only
+Nota: en Postman hay un botón para copiar la respuesta
+
+En el código creo una carpeta interfaces,esto es algo que tendré que hacer mucho.Pego el código y fijate que ya vienen para exportar las interfaces y todo.Todo esto además pesará 0KB.
+export interface SearchGifsResponse {
+    data:       Gif[];
+    pagination: Pagination;
+    meta:       Meta;
+}
+
+Ya le puedo decir que es de tipo SearchGifsResponse,del tipo que hemos creado like a pros.
+Se recomienda pasar este tipo como un genérico:
+>>this.http.get<SearchGifsResponse> (url...)
+
+*Tambien debo cambiar la propiedad que será GIf o Datum como venia al principio aunque recuerda que lo cambiamos a GIf
+public resultados: Gif[]=[];
+
+		VIDEO 86 LOCALSTORAGE - ALMACENAR Y TRAER LA DATA ALMACENADA
+
+Si nosotros recargamos el navegador perderemos el historial.Esto es así porque la información está en una instancia de la clase que tiene el array historial(del servicio).Lógicamente,cada vez que recargamos el navegador se crea una nueva instancia con sus propiedades en los valores por defecto(un simple array vacio).
+Vamos a almacenar la información en el localStorage.(también está el sessionStorage pero esa información se elimina en cuanto se cierre el navegador y se elimine la sesión)
+El localStorage no es un lugar para guardar información sensible pero guardar sus últimos resultados de una busqueda en el navegador del usuario es algo que se puede hacer perfectamente,es un lugar muy adecuado
+
+El método para guardar es localStorage.setItem(key:string,value:string).Esto es importante,sólo guarda strings,pero queremos guardar un arreglo,asi que lo stringificamos.
+Fijate que los objetos localStorage y JSON  y sus métodos setItem y stringify son de Js,más concretamente del objeto global Window
+
+*guardo
+localStorage.setItem('historial',JSON.stringify(this._historial));
+
+Faltaría recuperar la información.Fijate que en el constructor del servicio es un punto ideal,ya que sólo se va a ejecutar una vez,pues sus instancias están en Singleton.
+Ahora se presentan varios problemas,ya que getItem(key9 devuelve un string o null y nosotros tenemos un arreglo además:
+>getItem(key: string): string | null
+
+this._historial= JSON.parse(localStorage.getItem('historial)!) || [];
+Usar el operador not null assertion y devolver el array si si lo fuera arregla todo.Esto es lo mismo de forma más clara:
+
+if(localStorage.getItem('historial')){
+  this._historial= JSON.parse( localStorage.getItem('historial')!) ;
+}
+
+* JSON.parse hace justo lo opuesto al stringify,va a tomar un objeto serializado mediante stringify y lo va a retornar a lo que originalmente era
+
+
+					VIDEO 87 CARGAR IMAGENES AUTOMATICAMENTE
+
+Podriamos guardar las imágenes de la última busqueda del usuario en el localStorage.
+Casualmente tenemos el resultado en la propiedad resultados:
+>>public resultados:Gif[];
+
+Esta vez lo guardo en el subscribe,tras tener la response.data y almacenarla en esta propiedad,una vez que hay algo en ella la almaceno.
+La requiero en el constructor
+
+    this.http
+    .get<SearchGifsResponse>(
+      `https://api.giphy.com/v1/gifs/search?api_key=${this.apiKey}&q=${query}&limit=10`
+      )
+      .subscribe( (response) => {
+        this.resultados= response.data;
+        localStorage.setItem('resultados',JSON.stringify(this.resultados)); //
+        console.log(response.data);
+      });
+  }
+
+Pudiera ser que no queramos almacenar toda esa respuesta que son 78k,recuerda que eran casi 2000 lineas.En un futuro veremos como usar operadores RXJS y extraer sólo ciertas propiedades(al final de esta sección lo haremos)
+
+					VIDEO 88 OBTENER IMAGENES DESDE EL SIDEBAR
+
+Ahora queremos que si tocamos el botón del sidebar se carguen esas imágenes.Fijate que el método buscarGifs del servicio sólo necesita un string para realizar la petición y que al iterar con el ngFor ya tenemos en cada i ese string.
+Debes memorizar que puedo pasar una variable cualquiera asi:
+<li *ngfor="let item of resultados"
+<button ... (click)="buscar(item)" <- tengo visión sobre la variable item,la uso.
+El único inconveniente es agregarle una pequeña animación
+
+					VIDEO 89 OBJETO HttpParams
+
+No es que la forma que tenemos de realizar no funcione,pero sería mejor csentralizar todos lo queryParams y la URL.Afortunadamente,Angular ya tiene un objeto diseñado para ello.
+El objeto tiene el método set(string k, string v) para crear pares de claves-valor que tendrán que ser strings como el setItem del localStorage
+
+const params = new HttpParams()
+   .set('api_key',this.apiKey)
+   .set('limit','10') <- recuerda que es un string(puedo usar ToString()
+   .set('q',query);
+* Fijate que tengo que tener visión sobre el argumento 'query' asi que esto va dentro del método.
+
+* Quedará asi:
+this.http
+.get<SearchGifsResponse>(`${this.servicioUrl}/search`,{params})
+
+En realidad el segundo argumento es { params:params }
+
+				VIDEO 90 ANIMATE STYLE CSS
+
+Podemos usar alguna libreria para animaciones como animate.css la cual ahora se llama animate.style.
+Importamos la libreria y añadimos las clases para la animación que quiera:
+  
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+  />
+
+

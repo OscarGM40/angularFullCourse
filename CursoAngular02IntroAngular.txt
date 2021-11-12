@@ -1,0 +1,554 @@
+				INTRODUCCION A ANGULAR (SECCION 4)
+
+A pesar de que el 99% del tiempo no voy a necesitar tocar nada debo conocer la estructura de archivos de un proyecto de Angular.
+En la carpeta 'src' es donde estará el corazón de Angular.Desde aqui debo poner atención.
+
+		QUE VERÉ EN ESTA SECCION 4
+
+Crear proyectos de Angular
+
+Explicar cada archivo y directorio de un proyecto
+
+Componentes
+
+Módulos
+
+One way data binding
+
+Uso del AngularCLI - Angular Command Line Interface
+
+Directivas creadas por Angular
+
+ngIf y ngIf-else
+
+	VIDEO 31 INTRODUCCION A ANGULAR
+
+Podemos desarrollar aplicaciones móviles,web,de escritorio.Es el mismo código Angular el que usaré ya sea en Ionic,en Electron o en otra tecnología.Pero veamos que es Angular:
+
+1- Es un framework o marco de trabajo estandarizado,esto es bueno porque todo el mundo llamará a las carpetas parecido,etc...
+2- Viene con todo lo necesario para trabajar(con la App ya suele venir casi todo)
+3- Es modular.Básicamente nosotros vamos a crear módulos.Estos módulos cumplirán objetivos especificos.
+4- Google es quien mantiene el Framework
+
+Angular se compone de 5 bloques o pilares fundamentales:
+
+1- Componentes: son un bloque de código con HTML y una clase Typescript que tiene un decorador.Se debe intentar que los componentes sean bloques pequeños de código y lo más simples posibles.
+
+2- Rutas: Sirven para mostrar diferentes componentes basados en la URL del navegador o el cliente.
+
+3- Directivas: hay tres tipos de directivas.Tenemos las directivas de componentes,directivas estructurales y directivas de atributos:
+
+3a- De forma general las directivas de componentes son muy parecidas a un componente sólo que tiene un pedazo de código HTML reutilizable,el cual ya viene como conectado,es decir tu colocas la directiva y se incrusta ese código HTML con cierta funcionalidad integrada.Son muy útiles
+
+3-b Las directivas estructurales lo que hacen es modificar el DOM o el HTML ya sea añadiendo elementos o removiendo elementos.
+
+3c- Las directivas de atributos básicamente cambian la apariencia o el comportamiento de un elemento,otro componente o bien una directivas
+
+4- Servicios: los servicios son interesantes porque es algo bastante fuerte lo que pueden hacer en Angular.Son tan fuertes que no voy a necesitar trabajar con Redux u otro tipo de gestor de estado.Son opcionales,pero usualmente son singletons bastante fuertes que van a permitir trabajar toda la app con la información centralizada(son lugares centralizados de información).Ejemplo:un componente que pinta un botón,al hacer click el botón llama al servicio para que traiga información.En resumen: son lugares centralizados de información 
+
+5- Módulos: los módulos son geniales porque permiten agrupar todo lo que ya hemos descrito(componentes,rutas,servicios y directivas).Inclusive puede agrupar otros módulos.
+Ya hay componentes hechos en repositorios(módulos de terceros) que se pueden descargar,como calendarios,dashboards,los módulos son totalmente integrables.				
+
+				VIDEO 32 CREANDO UN PROYECTO
+
+Empezaremos con AngularCLI.La sintaxis es ng new <ProjectName>:
+>>ng new bases				
+Me hará preguntas como:
+1-¿Quieres que el chequeo de tipos sea más fuerte? Si
+2-¿Quiero que cree el archivo de configuración de rutas? No(tendré que crearlo yo de momento para aprender
+3- Elige formato de hojas de estilos(CSS,SCSS,Sass,Less,...)Angular ya por defecto se puede configurar a si mísmo para usar SCSS,por ejemplo.
+
+Fijate que aunque cree un montón de archivos Angular también compila a un estático,asi que me debe dar igual que haya 20 o 100 archivos en mi proyecto.Veremos como generar este estático y como desplegarlo en un hosting.
+Renombro el archivo y arranco la aplicación:
+>>ng serve -o
+'ng serve' toma todo el código,lo transpila a javascript mediante webpack y con -o lo abre en cuanto este disponible. 
+
+	VIDEO 33 EXPLICACIÓN DE LOS ARCHIVOS DEL PROYECTO AFUERA DE SRC
+
+1- tslint.json: usualmente un json suele ser un archivo de configuración.Un linter o el lint son reglas que me van a obligar a programar de cierta manera.Como además es un tslint son reglas para el Typescript(actualmente desde Angular 12 está deprecado y no viene por defecto,hay que crearlo.
+
+2- tsconfig.json: nuevamente es un archivo de configuración de Typescript.Básicamente dice como debe traducirse a Javascript.
+
+3- tsconfig.spec.json: fijate que la primera linea extiende del tsconfig.json ( "extends": "./tsconfig.json").En pocas palabras toma todo el tsconfig.json y le añade sus funcionalidades descritas en el (un include de php).El spec está relacionado a la parte de las pruebas(unitarias o de integración).
+
+4- tsconfig.app.json: nuevamente hereda el tsconfig.json asi que es la conjunción de ambos archivos( "extends": "./tsconfig.json").Está ya enfocado a la aplicación.Es muy muy raro que haya que tocar estos archivos de configuración en la práctica.
+
+5- README.md: es un archivo de documentación en markdown con texto describiendo la aplicación.No es un archivo importante
+
+6- package.json: tampoco debería editarlo manualmente.Está relacionado con las dependencias del proyecto,tanto en producción,que son las que irán al bundle de producción, como las de desarrollo que no van a la app final.
+
+7- package-lock.json: explica como se construyeron los módulos de node,son los metadatos de las dependencias del package.json.No es necesario tocarlo.
+
+8- karma.conf.js: es el archivo de configuración para las pruebas unitarias y de integración basadas en karma.Se explica más en el curso avanzado de Angular de Fernando
+
+9- angular.json: es un archivo importante para la aplicación ya que contiene configuraciones importantes para la aplicación,como la ruta a los assets(estáticos),al favicon a otros archivos,al css(fijate que es src/styles.css).Es un archivo importantísimo
+
+10- .gitignore: archivo para ignorar carpetas y archivos para GIT
+
+11- .editorconfig: son reglas para los archivos de typescript como la identación,espacios,juego de caracteres,tabulaciones.
+
+12- browserlistrc: es una lista con los browsers que soportan la aplicación.Es muy raro editarlo(a lo sumo añadirle IE11).
+
+13- node_modules: todos los módulos de Node.No tocar
+
+14- e2e(envToenvTesting): es donde se hace la configuracion de las pruebas envToenv.No se cubre en este curso.
+
+Nota: por defecto Angular configura diferentes ambientes de pruebas(karma,envToenv,...) porque hay muchas formas de hacer pruebas.
+
+		VIDEO 34 ARCHIVOS DENTRO DE LA CARPETA SRC	
+
+Si abro la carpeta 'src' veré las subcarpetas 'app','assets','environment' y varios archivos más.
+Si abro esta carpeta 'app' veré que la componen varios archivos.Esto es un componente realmente,formado por 4 archivos:
+1: app.component.css <- el archivo para el css del componente
+2: app.component.html <- el archivo para el html
+3: app.component.spec.ts <- archivo para pruebas
+4: app.component.ts <- archivo para el código TS
+5: app.module.ts <- 
+Usualmente el componente app es el componente principal,por eso me lo dan hecho ya.
+
+*Fijate que Angular me da la ventaja de poder usar CSS encapsulado,propio de un componente no más.Esto es perfecto.Además que existe un archivo para el CSS general.
+
+El app.component.ts no es más que una clase con un decorador que importo del core de Angular(la clase AppComponent):
+import { Component } from '@angular/core';
+
+@Component({
+    selector: 'app-root',
+	  templateUrl: './app.component.html',
+	    styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+    title = 'bases';
+}
+
+El app.module.ts nuevamente es otra clase comun y corriente(la clase AppModule) pero tiene un decorador especial(@NgModule)
+El appcomponent podria decirse que es la aplicación general.Aqui tendriamos los módulos que componen la misma.Es como un agrupador,una zona donde se especifica que contiene la aplicacion.
+
+La carpeta 'assets' es utilizada para colocar recursos estáticos en nuestra aplicación(imágenes,sonidos,cualquier cosa que no tenga que compilarse a Javascript)
+
+La carpeta environments es bastante útil,ya que Angular me provee de un lugar donde guardar mis variables de entorno,ya sea de desarrollo(el environment.ts) o de producción(environment.prod.ts)Solo tengo que mirar el booleano 'production' para saber en que entorno estoy:
+
+export const environment = {
+    production: true
+}
+Fijate que esto es genial ya que no tengo que hacerlo yo.
+
+También tenemos el favicon.ico para el favicon,el index.html que es el index.html general el cual le ve toda la aplicación.Puedo ver como hay una etiqueta <app-root></app-root> que es toda la aplicación Angular realmente:
+
+<body>
+  <app-root></app-root>
+ </body
+
+* Luego tenemos el main.ts el cual usualmente nunca se toca.Ayuda a decirle a Angular el ambiente en el que está corriendo,que componentes forman la App también:
+ * main.ts *
+import { AppModule } from './app/app.module';
+import { environment } from './environments/environment';
+
+if (environment.production) {
+    enableProdMode();
+}
+Dependiendo del target de la aplicación puede que tenga que tocar algo,pero en principio para una app Web no hará falta.
+
+Los pollyfills del pollyfills.ts ayudan a tener una mayor compatibilidad con otros navegadores Web viejos o poco conocidos.Tampoco se tocará apenas por motivos obvios.
+
+El styles.css es un archivo de estilos global a toda la aplicación.
+Por último el test.ts es la configuración del ambiente de pruebas que tampoco veremos en este curso.
+
+				VIDEO 35 APP COMPONENT
+
+Empezaremos por el app.component.ts.Si miramos el decorador y le quitamos el objeto veremos que da un error.
+Esto es porque @Component({}) lleva un objeto por argumento con al menos dos propiedades,el selector HMTL que lo renderizará en el index.html final de la raiz del proyecto y el template a usar para renderizar este componente(hay dos opciones,template y templateUrl):
+
+@Component({
+    selector:'app-root',  <- habrá que poner un <app-root> en el index
+	templateUrl:'app.component.html' <- ruta relativa al html a renderizará
+})
+export class AppComponent {
+    title = 'bases';
+}
+
+* Entonces,si templateUrl me permite pasar una ruta absoluta o relativa al file.html del componente que hace template?
+template me permite definir ya sea un template literal o codigo HTML ahi mismo:
+
+@Component({
+    selector:'app-root',
+    template:`<span>Fernando<span>`
+})
+export class AppComponent {
+    title = 'bases';
+}
+Basicamente me permite pasarle HMTL ahi mismo.Además se recomienda usar backtips.Si el código de html no es muy extenso es una opción totalmente válida,ya que me permite ver la clase ahi mismo. 
+
+En cuanto a la clase cualquier propiedad que defina la puedo inferir al file.html con dobles llaves:
+
+  export class AppComponent {
+	  title = 'Contador App'; <- para ver el valor de la propiedad la infiero al html
+  }
+  *en el html al que apunto con templateUrl:
+  <h1>{{ title }}</h1>
+
+IMPORTANTE: las dobles llaves no sólo valen para inferir el valor de las propiedades.En realidad son una zona para usar javascript,por ejemplo puedo poner {{ 1 + 1 }} y el interprete de javascript lo calculará.
+
+<h3>{{ 4 > 3 }}</h3> <- veré un true.Interesante
+
+			VIDEO 36 CONTADOR APP(EVENTOS)
+
+Realizar el típico contador es sumamente sencillo.Lo primero es almacenar el valor del contador en una propiedad.
+Nota: si intento pintar {{ undefined }} no veré nada.Importante recordar esto,pues no sale un undefined como pudiera pensarse.
+
+Otra cosa importante es que no es lo mismo <span>{{ value }}</span> que <span>  {{ value }} </span>; en el segundo caso veré los leading y trailing spaces(espaises,termina en es).
+ 
+ Asi pues creo dos botones y el marcador:
+
+<button> + 1 </button>
+<span> {{ numero }} </span>
+<button> - 1 </button>
+
+Lógicamente debo pasarle el evento onClick de Javascript a cada botón.Para pasar un evento en Angular se usa el nombre del evento sin la preposición 'on' y en minúsculas entre paréntesis:
+
+<button (click)= " ">
+*Dentro de las comillas puedo escribir una expresión de Javascript:
+<button (click)=" numero= numero +1; "> <- mucha gente usa el punto y coma o semicolon.
+
+* Importante: Angular es bastante inteligente y no renderizará todo.Puedo ver lo que se vuelve a renderizar en las DevTools en Elements.El elemento que cambié parpadeará un poco.
+
+Lamentablemente,en el lado del template no puedo usar este tipo de expresiones:
+<button (click)="numero += 1;"> hay que escribirla al completo.
+De todas formas se aconseja que la lógica vaya en el componente TS, amenos que sea algo sumamente sencillo
+
+			VIDEO 37 MÉTODOS EN EL COMPONENTE
+
+Vamos a cambiar un poco nuestro código y usando buenas prácticar crear un par de métodos que sustituyan las expresiones anteriores en el template.
+*Debo recordar que lo que tengo en la template es en realidad una instancia de la clase,por consecuencia podría apuntar a la propiedad numero con this:
+<button (click)="this.numero=this.numero+1";>
+En la clase si que tengo que usar 'this' obligatoriamente.En la template nadie lo hace realmente pero se puede hacer.
+@Component({
+  selector:'app-root',
+  templateUrl:'app.component.html'
+  })
+export class AppComponent{
+...
+  sumar():number {
+    return this.numero +=1;
+  }
+
+  restar():number {
+    return this.numero -=1;
+ }				    
+* Fijate como la clase se exporta!
+En la template se debe ejecutar el ḿetodo.No es como React que se pasan por referencia.
+<button (click)=" sumar(); "> + 1 </button>
+<span> {{ numero }} </span>
+<button (click)=" restar(); "> - 1 </button>
+
+
+* Por último recalcar que sería mejor crear un único método que reciba un argumento y lo sume o reste según sea positivo o negativo:
+
+acumular(valor: number): number {
+       return this.numero += valor;
+     }
+
+			VIDEO 38 TAREA CON EL CONTADOR (PROPIEDADES COMO ARGUMENTOS)
+
+Realizar la tarea de pasar por argumento una propiedad de la clase:
+
+<button (click)=" acumular(base); "> +{{base}} </button>
+<span> {{ numero }} </span>
+<button (click)=" acumular(-base); "> -{{base}} </button>
+
+* El resumen es que puedo pasar function(propiedad) o funcion(-propiedad9 perfectamente en Angular y se inferirá el valor de la propiedad en el template.No necesito nada más,se pone el nombre de la propiedad y listo,ni llaves ni ostias.
+
+			VIDEO 39 CREAR UN COMPONENTE MANUALMENTE
+
+Debo aprender como crear componentes manualmente primero.Vamos a simular que queremos extraer o encapsular nuestro componente contador.
+Lo primero es crear el archivo <nombreComponente>.component.ts 
+* es un estandar que despues del nombre vaya el tipo de objeto que es(un servicio,una directiva,un pipe... en este caso es un componente por eso lleva nombre.component.ts)Si el nombre es compuesto se separa con un guión(contador-increible.component.ts)
+
+*Importamos el decorador
+import { Component } from '@angular/core';
+
+*es una convención llamar app-xxxx a componentes creados por devs.
+
+@Component({
+    selector:'app-contador',
+    template:`
+       <h1>{{ titulo }}</h1>
+         <h3>La base es: <strong> {{ base }} </strong></h3>
+           <button (click)=" acumular(base); "> +{{base}} </button>
+           <span> {{ numero }} </span>
+		   <button (click)=" acumular(-base); "> -{{base}} </button>
+  `
+})
+export class ContadorComponent {
+     public titulo: string = "Contador App";
+     public numero: number = 10;
+     public base: number = 5;
+
+     acumular(valor: number):number{
+        return this.numero += valor ;
+     }
+}
+
+Fijate que he creado el selector <app-contador></app-contador>.Podria pensar que con simplemente llamarlo ahora en app.component.ts es suficiente,pero de momento Angular nos arrojará el error de que <app-contador> no es un elemento conocido y que debo verificar si es parte del módulo.El único módulo que tenemos es app.module.ts.Analicemoslo:
+
+* esto es porque el scope es una Aplicación Web
+import { BrowserModule } from '@angular/platform-browser';
+* esto es la importación del decorador de abajo
+import { NgModule } from '@angular/core';
+
+* Fijate que estoy trayendo este componente nada más
+import { AppComponent } from './app.component';
+
+* En declaraciones debo declarar todos los componentes que estoy utilizando,para así importarlos.Lógicamente,no lo he hecho con ContadorComponent
+@NgModule({
+  declarations: [
+     AppComponent
+  ],
+  imports: [
+     BrowserModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})* recuerda que el archivo module es una clase con un decorador
+export class AppModule { }
+
+IMPORTANTE: en declarations se importan los nombres de las clases que deberé exportar previamente!Recuerda que la estoy exportando,asintoooo!!
+
+En imports van otros módulos,es fácil saberlo porque siempre habrá un módulo (como BrowserModule).Fijate que esté modulo es una clase que exporto asi que podría ir a otro módulo.
+
+Los providers son como servicios especificos a un módulo 
+El bootstrap indica quien es el componente principal,el que quiero lanzar primero.Usualmente sólo se coloca una vez.En este caso bootstrap: [AppComponent] indica que se lanza este componente al arrancar la app.Fijate que es el nombre de la clase de nuevo. 
+
+* Fijate que las 4 propiedades del objeto del decorador son de tipo Array
+
+@NgModule({
+  declarations: [
+    AppComponent,
+	ContadorComponent <- debo importar todas las clases
+  ],imports: [], providers: [],bootstrap: []
+  })
+
+En cuanto haga esto ya puedo importar la clase.Bien por Angular
+import { ContadorComponent } from './contador.component';
+
+VENTAJAS DE HACER ESTO: ahora que tengo mi propio componente metido en una tag HTML lo puedo llamar cuantas veces quiera o reutilizarlo en otra aplicación:
+*Puedo crear tres contadores en un abrir y cerrar de ojos...
+<app-contador></app-contador>
+<app-contador></app-contador>
+<app-contador></app-contador>
+Se puede observar el gran beneficio de componetizar o granular una aplicación.
+Por último recuerda y date cuenta que en Angular casi todo son clases y decoradores.
+
+		VIDEO 40 COMPONENTE HEROE Y SEPARACION DE DIRECTORIOS
+
+Algo fundamental a cualquier tecnología es un buen manejo de la estructura del arbol de directorios del proyecto.
+Cuando se crea un componente se crea un directorio,creeemos uno llamado heroes.Dentro creamos el heroe.component.ts y el heroe.component.html.
+* Aqui viene otra regla y es que esto deberia estar dentro de la carpeta 'heroe' y no 'heroes'.
+
+import { Component } from "@angular/core";
+
+@Component({
+     selector: 'app-heroe',
+     templateUrl:'heroe.component.html',
+})
+export class HeroeComponent {
+
+}
+
+Por último añado la clase HeroeComponent al array de declarations en el decorador @NgModule para añadir este subcomponente al componente principal que especifique en el array bootstrap.
+
+En el siguiente video veremos que poderoso es Angular manipulando el DOM
+
+		VIDEO 41 CAMBIOS EN EL TEMPLATE DEL COMPONENTE
+
+En la zona de las expresiones en las templates puedo llamar a funciones como toUppercase() etc...Como en React:
+
+
+<h1>{{ nombre }}</h1>
+
+<dl>
+ <td> Nombre: </td>
+ <dd> {{ nombre }} </dd>
+	   
+ <td> Edad: </td>
+ <dd> {{ edad }} </dd>
+
+ <td> Funcion: </td>
+ <dd> {{ obtenerNombre() }} </dd>
+
+ <td> Capitalizado: </td>
+ <dd> {{ nombre.toUpperCase() }} </dd>
+
+</dl>
+
+Si bien esto es correcto como estoy trabajando con clases yo puedo crear getter y setters
+
+		  CREAR GETTERS Y SETTER EN ANGULAR
+
+IMPORTANTE: los getters y setters se crean con las palabras reservadas 'get' y 'set' y son pasados por referencia a la template,a diferencia de una funcion normal.Son llamados también métodos de acceso o accesores.En teoría se deben usar para acceder y/o modificar el valor de una propiedad privada únicamente,y no como aquí para capitalizar(esto es tarea de un método).
+
+ get nombreCapitalizado(){
+	return this.nombre.toUpperCase();
+  }	
+
+* En el template se llaman a los getter por referencia
+  <td> Capitalizado por getter: </td>
+  <dd> {{ nombreCapitalizado }} </dd>
+
+En la ayuda veré a 'nombreCapitalizado' en azul,como si fuera una propiedad,pero es un getter(por eso no lo llamo como una función,porque simula ser una propiedad)
+
+			VIDEO 42 CONCEPTO DE ONE WAY DATA BINDING
+
+Queremos que al pulsar en el botón cambie el nombre de la propiedad y por ende de lo que se muestra en la template. Simplemente creamos un método que cambie el valor de la propiedad en la clase y lo llamamos:
+
+cambiarEdad(): void { 
+   this.edad = 30;
+}   
+<button (click)="cambiarEdad();">
+   Cambiar edad
+</button>
+
+*Nota: puedo ver en las DevTools qué es lo que cambiar exactamente,y como Angular también sólo redibuja lo necesario.También puedo ver lo fácil que es cambiar el DOM en Angular.
+*Angular es muy eficiente,sólo cambia lo que tiene que cambiar.Esto además lo puedo confirmar clickando varias veces y veré que sólo la primera cambia algo en el DOM,las sucesivas veces no lo redibuja en absoluto,pues Angular sabe que nada cambió.
+ 
+El concepto de one way data binding implica que las propiedades en el HTML están enlazadas en una única dirección(de momento) con la clase.Si cambia algo en la clase,cambiará en el HTML y por consecuencia en el DOM.
+
+		VIDEO 43 CREAR COMPONENTES DE FORMA AUTOMÁTICA 
+
+VAmos a crear un componente para explicar las directivas básicas de Angular en sucesivos videos.Borremos el directorio listado,pues lo haremos desde cli.Lo más importante es que tengo que hacerlo desde la raíz del proyecto.La sintaxis es ng generate component <pathDesdesdeFolderApp>
+
+*Fijate que incluye a App porque toda app Angular viene con él
+01-bases>ng g c heroes/listado
+Esto creará 5 archivos además de importar al array declarations del decorador en el módulo más cercano este componente(puedo deshacerlo con CTRL+z si me equivoco,pues será el último paso que dió ese archivo)
+
+Más adelante veremos como crear componentes sin los 4 archivos,personalizando la creación del componente.
+Nota: en cuanto un componente tenga una o más hojas de estilos habrá que especificarlo en el decorador @Component,en la propiedad styleUrls:[]de igual forma añadiendo la ruta absoluta o relativa a la hoja u hojas de estilos(fijate que es un array):
+
+>>  styleUrls: ['./listado.component.css']
+
+También veré que ha implementado el ciclo de vida OnInit automáticamente(es una interfaz) además del constructor.Es nuestro primer ciclo de vida.Se dispara cuando se crea el componente:
+
+ constructor() {
+    console.log('En el constructor')
+  }
+
+  ngOnInit(): void {
+    console.log('En el ciclo de vida OnInit')
+  }
+
+>  En el constructor
+>  En el ciclo de vida OnInit
+* El constructor va antes,pues primero se crea la instancia de clase,despues se crea o nace el componente.Lógicamente no puede crearse antes el componente,que es una instancia de la clase,antes del constructor,pues es el constructor el que la crea.
+
+El ngOnInit se usa para inicializar cosas,como realizar peticiones para que tenga yo ya listo algun dato segun nazca el componente.Veremos esto más adelante,asi que lo podemos borrar.
+
+			VIDEO 44 DIRECTIVA *ngFor="let item of items,let i=index"
+
+Vamos a definirnos un arreglo de strings en ListadoComponent.
+
+>heroes: string[]= ['Spiderman','Ironman','Hulk','Thor'];
+
+Recordemos que ya vimos que tenemos unas directivas estructurales las cuales permitian cambiar o manipular el DOM de una manera sencilla.Entre ella tengo a *ngFor="let item of items" la cual permite iterar sobre una coleccion 'items' y tener en 'item' a cada iteración.
+
+<p>Listado de Heroes</p>
+<ul>
+   <li *ngFor="let item of heroes,let i=index">
+       {{i}}{{ item }}
+   </li>
+</ul>
+*A veces también querré el indice,esta bajo la keyword index(la i la puedo cambiar,es solo una variable)
+En cuanto cambie algo en el arreglo heroes en la clase Angular volverá a renderizar el DOM gracias al concepto de one way data binding visto anteriormente.
+
+Importante cuando tenga un undefined puedo usar el operador || para devoler lo de la derecha(esto si que debo recordarlo)
+ this.heroeBorrado = this.heroes.shift() || ''; <- si es undefined el shift() devuelveme una cadena vacia.
+
+			 VIDEO 45 DIRECTIVA *ngIf="condition"
+
+Esta otra directiva estructural es supercomún y también permite cambiar el DOM.Tratemos de mostrar el h3 que dice 'Heroe borrado' de manera condicional,pues si no borramos nada no tendría porque mostrarse.
+La directiva *ngIf="conditional" muestra el bloque en el que declare esta directiva sólo si la condición se resuelve a true:
+
+<h3 *ngIf="true">Muestrame</h3>
+<h3 *ngIf="false">No me muestro jamás</h3>
+
+*Si bien se puede hardcodear el true o false siempre se usa alguna expresión boleana
+
+<div>
+   <h3 *ngIf="this.heroeBorrado !== '' ">Heroe borrado:
+     <small>{{ heroeBorrado }}</small>
+   </h3
+
+También podría pasar simplemente heroeBorrado y si el valor tiende a falsy no se cumplirá el true y no se mostrará,como la primera vez es una cadena vacia la lógica es la misma
+
+				VIDEO 46 Ng-Template Y ngIf-else REFERENCIAS LOCALES
+
+Seria conveniente que hubiera un Else en Angular,es por ello que lo hay.Para entenderlo bien hay que entender las referencia locales.La sintaxis es *ngIf="condition; else localRef":
+
+<div *ngIf="heroeBorrado; else noBorrado">
+  code for the condition when true	...
+* Fijate que noBorrado es una variable cualquiera.
+
+<ng-template #noBorrado>
+  <h3>No ha borrado nada</h3>
+</ng-template>
+
+El 'ng-template' es un componente propio de Angular bastante interesante ya que no tiene una contraparte en el lado del HTML.Simplemente va a mostrar su contenido basado en el else(cuando sea false)  
+
+* Una referencia local la voy a identificar por el símbolo del numeral.Esto lo veré en profundidad en los formularios por template.La referencia local no es algo que existe en el componente o la clase TS(no tiene su contrapartida en código Typescript).Es decir,que siempre es del lado del template,es sólo HMTL.
+
+					VIDEO 47 MÓDULOS PARTE I
+
+Actualmente nosotros tenemos un módulo principal llamado app.module.ts.Este módulo además puedo ver que lo carga el main.ts.Bien,imaginemos que mi aplicación tiene 100 componentes.¿Realmente es eficiente que yo tenga 100 posiciones en el Array 'declarations' junto con las 100 importaciones de sus clases?.
+Esta claro que debería usar más de un módulo.El objetivo de los módulos es ayudarnos a agrupar componentes y piezas de nuestra aplicación que tienen sentido o relación entre sí.
+Siempre se deben agrupar en módulos de manera que me sea más fácil a mi expandir su funcionalidad o añadir más componentes sin necesidad de tener que ir al app.module y añadir mas componentes y que crezca descontroladamente.
+Los módulos tienen pues como objetivo agrupar las cosas,aunque también ayudan en la carga perezosa o lazy load.
+Imagina que tengo un módulo llamado productos pero el usuario apenas interactua con ese módulo.¿Para que voy a cargar el módulo productos y todos sus componente haciendo más pesada la aplicación innecesariamente? La carga perezosa soluciona esto,cargando bajo demanda.Ya se verá esto.De momento creemos un módulo que agrupe todo lo relacionado al folder 'heroes'.
+Primero veremos como hacerlo manualmente.Lógicamente el archivo se llamará heroes.module.ts:
+
+		ARRAY EXPORTS []
+
+* NOTA: todo lo que defina en el array de declaraciones de la directiva @NgModule simplemente está definido.Por tanto,aún esta invisible para la aplicación,es decir,para el resto de módulos.Es por ello que existe el arreglo exports.Con los exports indico qué componentes serán visibles afuera del módulo,ya que mientras no lo defina sólo son visibles en el módulo suyo. 					
+
+En la zona de los imports van módulos,de momento necesitamos importar el CommonModule de @angular/common y declararlo en ese array,ya que estamos creando un módulo común.Sin especificar que es un módulo Angular reventará:
+* En el heroes module 
+@NgModule({
+     declarations: [
+        HeroeComponent,
+        ListadoComponent
+	    ],
+     exports: [
+        ListadoComponent,
+        HeroeComponent
+      ],
+     imports: [
+        CommonModule
+      ],
+
+Ahora que tengo el módulo completado tendré que importarlo en el app.module.ts en el array imports además de lógicamente borrar de declarations lo que ya estoy declarando en el módulo heroes:
+*En el app.module.ts
+@NgModule({
+    declarations: [
+      AppComponent,
+      ContadorComponent, <- limpio el array y las importaciones
+    ],
+    imports: [
+      BrowserModule,
+      HeroesModule <- me traigo ese módulo
+  ]
+
+REsumen: hay que importar los modulos al módulo general y hacer públicos los componentes si son usados fuera de su módulo
+
+			VIDEO 48 MODULOS PARTE II
+
+Aunque hemos introducido el tema de los módulos que es un tema avanzado es indispensable saberlo cuanto antes.Las aplicaciones Angular deben manejarse en base a módulos.
+Bien,recordemos la línea del imports:[] donde nos traemos a CommonModule.Si la comentamos veremos que da error en el uso de las directivas etructurales *ngFor y *ngIf.
+No da error en el uso de inferencia de propiedades({{ propiedad}}) o cosas básicas,pero si voy a usar directivas estructurales de Angular necesitaré importar el CommonModule.
+En resumen,trabajar con aplicaciones modularizadas tiene muchos beneficios y es por ello que es algo básico.
+
+		VIDEO 49 RESPALDAR LA APLICACIÓN EN GITHUB(RELEASE TAG)
+
+Es imprescindible entender las release tag en Git.Para ello primero hay que tagear la aplicacion,despues publicar un release en el repo:
+>git tag -a v0.1.0 -m "fin seccion 4"
+* ESto solo tagea el comit actual,para subirlo y que se cree el comprimido hay que hacer un push --tags
+>git push --tags
+Aun faltaría ir al repo y publicar la release TAG.Fijate que hay que crear la tag,subirla y publicarla!
+
+

@@ -1,0 +1,989 @@
+		SECCIONES 16,17,18 Y 19 FORMULARIOS POR TEMPLATE Y REACTIVOS
+
+Hay dos aproximaciones que puedo tomar al usar formularios en Angular.Una es usar formularios por template y otra formularios reactivos.
+La principal diferencia es que en los formularios por template la mayor parte de la lógica se encuentra en el HTML(o toda).Esto se consigue mediante ciertos atributos que usaremos y con los cuales Angular inferirá todo de manera automática.
+Los formularios reactivos por otro lado dan más control y es más fácil implementar validaciones que en la aproximación por template.
+Compararemos ambas aproximaciones en las siguientes secciones.
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- Template driven
+2- ViewChild
+3- Two way databinding
+4- Formularios dinámicos
+5- Checks, radios y switches
+6- Directivas personalizadas - Nota: este tema se cubre a profundidad después en una sección especializada
+7- Manejo del formulario y validaciones
+8- Encapsular módulos y scope de los mismos
+
+Este es un tema fundamental, pero no es el único, hay varias formas de manejar el estado de un formulario, principalmente tenemos Template driven y Model Driven o formularios reactivos, en esta sección trabajaremos con formularios por template.
+
+				VIDEO 228 TEMPLATE DRIVEN FORMS 
+
+Creo el proyecto con ng new projectName y actualizo el core de jasmine-core.Empecemos creando los modulos necesarios.Usaremos rutas y lazy load.
+
+*EN shared tendremos un menu lateral como componente ademas del modulo
+>ng g m shared
+>ng g c shared/sidemenu --skip-test -is
+* Importo el módulo Shared desde el global AppModule
+
+* vamos a generar un módulo de forma un tanto distinta(para poder ver todas las opciones puedo usar ng g m --help o g guard o g component,pero siempre --help)
+
+  --project 
+    The name of the project.
+  --route 
+    The route path for a lazy-loaded module. When supplied, creates a component in the new module, and adds the route to that component in the `Routes` array declared in the module provided in the `--module` option.
+  --routing 
+    Create a routing module.
+  --routing-scope 
+    The scope for the new routing module.
+* fijate en las opciones --routing y --route.
+
+>ng g m template --routing <- esto me va a crear el modulo de rutas hijas y además me iniciará el arreglo de Routes y las importará como RouterModule.forChild(routes).
+* Asi pues la flag --routing me crea un modulo de rutas secundarias.Muy útil.
+Genero otro modulo para los formularios reactivos con rutas hijas:
+>ng g module reactive --routing
+
+			VIDEO 229 MAS COMPONENTES Y LAZYLOAD
+
+Fijate que no necesito exportar esto en cada módulo de rutas que cree:
+exports: [RouterModule] <con hacerlo en el modulo root una vez es suficiente.
+
+>ng g c reactive/basicos --skip-tests -is
+>ng g c reactive/dinamicos --skip ...
+>ng g c reactive/switches
+
+* Ahora configuro las rutas de ese hijo reactive 
+
+const routes: Routes = [
+  {
+    path:'',
+    children: [
+      {
+        path: 'basicos',
+        component: BasicosComponent
+      },
+      {
+        path: 'dinamicos',
+        component: DinamicosComponent 
+      },
+      {
+        path: 'switches',
+        component: SwitchesComponent
+      },
+      {
+        path:'**',
+        redirectTo:'basicos '
+      }
+    ]
+  }];
+
+
+* En el padre se hace la lazy load.Debo importar el modulo general,no sólo el de las rutas,ya que el que lo englobe tendrá declaraciones de componentes,etc.Además que lo que queremos es cargar el módulo ese con todo lo que tuviera.No es el módulo de rutas,sino el modulo de la zona
+  
+/* {
+    path:'reactive',
+    loadChildren:() => import('./reactive/reactive.module').then( m => m.ReactiveModule)
+  },
+  {
+    path:'template',
+    loadChildren:() => import('./template/template.module').then( m => m.TemplateModule)
+  }, */
+  {
+    path:'reactive',
+    loadChildren:() => import('./reactive/reactive-routing.module').then( m => m.ReactiveRoutingModule)
+  },
+  {
+    path:'template',
+    loadChildren:() => import('./template/template-routing.module').then( m => m.TemplateRoutingModule)
+  },
+  {
+    path:'**',
+    redirectTo:'template'
+  }
+* Aun asi probaré con el de rutas sólo en vez de el de la zona.
+
+							VIDEO 230 SIDEMENU
+
+Crear una <List> con <Links> es bastante fácil.Sólo necesito usar los atributos routerLink* y routerLinkActive(e importar el RouterModule en esa zona!):
+<ul class="list-group>
+  <li class="list-group-item" routerLink="template/basicos" routerLinkActive="active> basicos </li>
+  <li class="list-group-item" routerLink="template/dinamicos" routerLinkActive="active">dinamicos </li>
+* Le añado la clase 'active' condicionalmente.Fijate en lo poderoso que es Angular + bootstrap.
+
+Al final usamos un ngFor:
+<li class="" *ngFor="let item of rutas" [routerLink]="[item.ruta]" ... <- fijate que como quiero entrar a un objeto tengo que hacer databinding a la propiedad routerLink.
+
+				VIDEO 231 FORMS BY TEMPLATE
+
+La principal diferencia es que cuando usamos aproximación por template le decimos a Angular que él se encargue de manejar todo el formulario de manera automática(o la mayor parte,al menos) y que todos los cambios los haga del lado del HTML.
+Por ello,la mayor parte de la lógica estará en la template(en el .html).
+En los formularios reactivos,por otro lado, se procura que el template sea lo más básico posible y que todo el trabajo pesado esté en la clase Typescript.
+
+Ambas aproximaciones tienen sus ventajas y desventajas.Cuando solo quiero manejar un par de inputs los formularios por template son geniales,mientras que si es un formulario grande puede ser mejor usar la forma reactiva.
+* Puedo hacer flotar algo a la derecha con float-end(desde Bootstrap 5 en vez de right se usa end y en vez de left start)
+<div>
+<button class="btn btn-primary float-end">Guardar</button>
+</div>
+Logicamente debe estar en display:block
+
+			VIDEO 232 FORMS MODULE
+
+Lo primero que hay que hacer es importar el FormsModule para quitar ese hard refresh del submit
+Usualmente se importa en el módulo donde lo voy a usar asi que lo importo en el template.module.Viene de @angular/forms
+import { FormsModule } from '@angular/forms';
+
+En cuanto el módulo sea parte del bundle de la aplicación dejara de hacer ese hard refresh,asi que si lo sigue haciendo levanto de nuevo el proyectoNOTA: confirmado que importar el modulo de rutas en vez de el modulo que importa esas rutas(su padre) da problemas.No hacerlo más,asinto. -_-
+
+IMPORTANTE: los formularios son de tipo NgForm( import { ngForm} from '@angular/forms/ngForm'; Con ello obtendré el tipado:
+
+* Para rescatar el valor debo usar una referencia local al formulario(hay que decirle a la referencia que es de tipo 'ngForm' obligaroriamente)
+<form (ngSubmit)="handleSubmit(miFormulario) #miFormulario="ngForm">
+
+* En la clase manejo ese método:
+handleSubmit(miFormulario:NgForm){ <- ya tengo la autoayuda.
+ console.log(miFormulario.value) 
+* Esto me dará un objeto vacío,ya que no he enlazado los inputs con Angular.Para ello necesito la directiva ngModel en cada input(que a su vez necesita el atributo name!)
+<input type="text" name="nombre" ngModel
+Si ahora imprimo el valor de ese formulario:
+<span> value </span>
+<pre> {{ miFormulario.value }} </pre>
+Veré que es igual que el onChange() de React,por cada cambio en un caracter se dispara y me recoge el valor.Muy interesante.
+
+* El atributo ngModel lo que hace es meterlo en el Modelo del formulario.El decirle a un campo input que es de tipo Number es importantisimo,ya que por defecto es un string y si quiero despues manejarlo como un Number debo rescatarlo ya en un input type="number" (o tendría que hacer conversiones despues)
+
+precio: 1500 <- puedo ver que rescató el precio y el stock como Numbers y el producto como un String
+producto: "rx 3090 ti"
+stock: 5
+
+* Sin embargo podemos apreciar que el formulario está en valid:true todo el rato.En cuanto ponga por ejemplo que un campo es required ya se pondrá en false( asi pues,la propiedad form.valid es muy útil también).
+<input required minlength="3" > ahora ya siempre estará en invalid hasta que no ponga tres letras!
+* No confundir min que es el valor minimo con minlength
+<input type="number" min=0 max=45 <- sólo puedo elegir desde el 0 al 45,nada que ver con la longitud del numero
+
+				VIDEO 233 MOSTRAR MENSAJES DE ERROR CONDICIONALMENTE
+
+Es importante para mi entender que hay muchos más métodos y atributos HTML para formularios de los que pensaba.Muchos como 'valid' o hasErrors() son imprescindibles y debo saber manejarlos(ver como puedo hacer esto en React).
+
+      <span>Valid</span>
+      <pre>{{ miFormulario.valid | json}}</pre>
+
+      <span>Pristine</span>
+      <pre>{{ miFormulario.pristine| json}}</pre>
+
+      <span>Touched</span>
+      <pre>{{ miFormulario.touched | json}}</pre>
+
+      <span>Value</span>
+      <pre>{{ miFormulario.value | json}}</pre>
+
+Pristine indica si se ha cambiado el formulario(un simple caracter o espacio en blanco lo pondrá en false para siempre).Puedo retornar el formulario a su estado 'pristine',es como un reset,muy interesante.
+Touched es si lo ha tocado.Sólo con entrar a un campo ya habré tocado el formulario,pero si no lo cambio aún seguirá 'pristine'.Asi pues touched es entrar al formulario y pristine cambiar algo.(primero hay que tocarlo para poder cambiarlo además)
+
+Volviendo al tema de renderizar condicionalmente ese span,hay algo que debo entender,que son los FormControls.Un FormControl es cada uno de los controles o campos de un formulario,por ejemplo en este tengo tres,el nombre,el precio y el stock:
+* console.log(miFormulario.controls}
+{producto: FormControl, precio: FormControl, stock: FormControl}
+ 
+Para poder acceder a los controles tengo la propiedad controls,y fijate que es un objeto asi que puedo hacer cosas tan impresionantes como !miFormulario.controls.producto?.valid o miFormulario.controls.precio?.invalid(en errors tengo si hay errores) .Es básico que sepa referenciar un formulario como programador.
+
+TEngo que usar '?' porque se tarda un poco en renderizar el formulario por parte del browser y no existe la propiedad producto o precio inmediatamente,dando un error fatal de undefined.
+Como además queremos mostrar el error sólo cuando el usuario deje el campo podemos hacer un ngIf para ese span con este código:
+<span class="alert..." *ngIf="miFormulario.controls.producto?.invalid && miFormulario.controls.producto?.touched"> Debe de tener tres letras </span
+
+* seguramente haya más formas e incluso el texto que mandamos como feedback lo haremos diferente.Referenciar un formulario es básico.
+Aunque el código crezca mucho en las aproximaciones por template se pueden hacer cosas como sacar el código anterior a una función.Fijate que es lo que hicimos con React.
+
+					VIDEO 234 VIEW CHILD
+
+Dado que queremos simplificar lógica en la template de alguna manera tengo que tener en una variable el formulario,dado que las referencias locales que estamos usando son sólo del lado de la template.
+Para ello esta el decorador @ViewChild('localRef') variable, para sacar una ref local de la template a la clase.Es algo básico.
+
+  @ViewChild('miFormulario') miFormulario!: NgForm;
+En cuanto tengo esto en la clase ya puedo hacer lo que quiera:
+metodo(){
+ return this.miFormulario.controls.producto?.invalid && this.miFormulario.controls.producto?.touched;
+} 
+* Como es una propiedad tengo que usar this.
+
+			VIDEO 235 TEMPLATE VALIDAR NUMERO MAYOR A 0 DIRECTIVAS PERSONALIZADAS
+
+De igual manera que para el producto creo otro método para el precio.
+<span *ngIf="precioValido()">Debe de ser mayor que 0</span>
+precioValido():boolean { return this.miFormulario?.controls.precio?.invalid && touched;
+Ahora puedo deshabilitar el botón Submit con su propiedad disabled:boolean igualandola a formulario.invalid!:
+<button type="submit" class="btn btn-primary float-end [disabled]="miFormulario.invalid"> <- fijate como tengo que hacerla databinding por ser un objeto,tal vez lo mejor sea hacerlo siempre y ya.
+
+				VIDEO 236 CREAR DIRECTIVAS PERSONALIZADAS -CUSTOM MIN-
+
+Necesitamos que el formulario no sea válido cuando ingreso un negativo.Vamos a crear una directiva especializada,algo que hay que hacer en el approach por template pero que angular-validators ya lo trae echo cuando use formularios reactivos.
+
+Para crear una directiva creo un archivo nombre.directive.ts( la extensión es para que el desarrollador sepa que es una directiva) en el folder directives.
+Para que Angular sepa que es una directiva necesita el decorador @Directive(la extensión del file no es vinculante para Angular).Logicamente es una clase,como todo en Angular(@Directive viene del core:
+
+*Fijate como llamó custom-min-directive para que se transforme en camelCase.
+
+import { Directive } from '@angular/core';
+
+@Directive({
+ selector: `[customMin][ngModel]', <- nombre final que tendrá.Además,solo podré usarla si también esta el atributo 'ngModel'.Si no lo tiene no entrará la directiva,y por ello no extenderá la funcionalidad.
+
+}) 
+export class CustomMinDirective implements Validator {
+  @Input() minimo! : number;
+
+* el argumento es un FormControl
+validate ( control: FormControl) {
+  const inputValue = control.value;
+  return (inputValue < this.minimo)
+  ? { customMin: true }
+  : null;
+  
+} // fin validate
+  constructor() {}
+
+* Validator es una interface del forms/core de Angular que me permite usar validaciones como required,minLenght,...(igual que express-validator para node).Pide extender su función abstract validate() la cual devuelve un objeto(el retorno del propio formulario)Puedo usar return null en pruebas por ello ,pero devuelve algo.
+
+Para poder usar esta directiva se la paso como un atributo HTML al elemento que quiero,en este caso el input para el stock de productos:
+
+<input type="number" class="" 
+  ngModel name="stock" 
+  customMin
+  [minimo]="0"
+
+Al usar la directiva extenderé la funcionalidad,pudiendo usar el atributo minimo.Por último tengo que usarla en el array declarations del modulo.
+mport { CustomMinDirective } from './directives/custom-min.directive';
+
+
+@NgModule({
+  declarations: [
+    BasicosComponent,
+    DinamicosComponent,
+    SwitchesComponent,
+    CustomMinDirective <- va en 'declarations'!
+  ],
+  imports: [
+    CommonModule,
+    TemplateRoutingModule,
+    FormsModule,
+  ]
+})
+export class TemplateModule { }
+
+Por último,el decorador necesita una zona de providers con este código:
+@Directive({
+   selector: '[customMin][ngModel]',
+   providers:[{
+      provide:NG_VALIDATORS,
+      useExisting: CustomMinDirective,
+      multi:true
+   }]
+})
+Ya tengo visión sobre ese minimo.Además puedo imprimir los errores de cada FormControl usando #form.controls.campo.errors | json.Muy interesante.
+
+<span>CustomMinDirective </span>
+<p>{{ miFormulario.controls.stock?.errors | json </p>
+* Aunque son unos cuantos pasos es todo procedural y sencillo de implementar realmente.Recuerda que las directivas son declaradas(en declarations) y no implementadas con import como pudiera parecer
+
+				VIDEO 237 LIMPIAR EL FORMULARIO
+
+Limpiar un formulario realmente no debe de ser sólo poner los valores a "" o null tras el submit,ya que el pristine y el touch ya han sido modificados.Esto no es resetear el formulario.
+
+Hacer esto(resetear todo,incluso el pristiney touch) realmente es muy sencillo.Con la referencia al formulario sólo hay que llamar al método resetForm()
+
+handleSubmit(){
+this.miFormulario.resetForm({
+  precio:0,
+  stock:0,
+}
+}
+* Incluso puedo pasarle un objeto con los valores a los que resetearse(es un argumento opcional,puedo usar resetForm() a secas).
+ Dado que estamos usando la directivas ngModel podría establecer los valores con una propiedad de la clase:
+
+    initForm = {
+      producto: "nuevo producto",
+      precio:0,
+      stock:10,
+    }
+* En la template enlazo las propiedades de ese objeto
+    [ngModel]="initForm.stock"
+
+Aunque irá al value del FormControl,lo cual es un poco agresivo!
+
+		VIDEO 238 FORMS DINAMICOS POR TEMPLATE
+
+En un formulario dinámico el objeto Modelo puede crecer con más campos y más valores(de manera dinámica) y no debe perder ninguno de ellos.
+
+REST (transferencia de estado representacional) susutituye a SOAP que sólo usaba XML.Con JSON de viernes 13,todo e ma fazilh.
+
+			VIDEO 239 ENLAZAR UNA PROPIEDAD TIPO ARRAY AL NGMODEL
+
+Si yo quiero enlazar desde la clase a la template una propiedad,por ejemplo tipo string, lo puedo hacer con [ngModel]="propiedad" facil(recuerda que () es desde la template a la clase,siempre que tenga dudas piensa en los eventos,todos van con (click)= y no con [click]).
+
+Además tendré que darle un name único,pero,¿y si me quiero referir a un arreglo?.La cosa cambia un poco.
+persona= { nombre:'Fernando', favoritos: [{ id:1, nombre:'Juego 1', id:2 , nombre: 'Juego 2'} ]}
+
+<input *ngFor="let item of persona.favoritos,let i=index" [(ngModel)]="item.nombre" <- item es cada posicion del array,luego tengo a 'id' y a nombreunicamente para imprimir.Además voy a rescatar valores desde la clase asi que hago un two-way data-binding con [()].bananas-prehistoric box
+ name="juego {{i}}" <- es aqui donde cambia la cosa.El name no puede ser el mismo,pues estoy en un ngFor,debo hacerlo dinámico,da igual su nombre,pero no puede repetirse
+* Puedo observar que realmente es sencillo vincular una propiedad arreglo al modelo de un formulario en Angular.
+
+Para borrar de un arreglo en Javascript una de las mejores opciones es usar splice(posicion,numero de elementos a borrar)
+return this.persona.favoritos.splice(0,1) <- me borras uno empezando desde la posicion 0,o sea el primero.
+
+				VIDEO 241 AGREGAR JUEGOS FAVORITOS
+
+Fijate como no vamos a usar el formulario(y como me están diciendo que no tengo porque usar el submit para rescatar un valor de un único campo).Puedo usar [(ngModel)] y crear una propiedad y no usar el boton submit para nada:
+
+<input type...  [(ngModel)]="nuevoJuego" name="nuevoJuego"
+Logicamente necesito doble enlace.En la clase me creo la propiedad con el valor del ngModel(no el del name,ese cualquiera):
+nuevoJuego:string="";
+Como era un inputGroup tengo un boton ya,asi que mando en el (click) cualquier método.Tendré el valor en esa propiedad.Incluso puedo completar la tarea con el evento (keyup.enter)="mismo método" ya que la lógica la comparten el botón y el Intro.
+
+  <input type="text" 
+         class="form-control" 
+         [(ngModel)]="nuevoJuego"
+         name="nuevoJuego"
+         placeholder="Agregar juego favorito"
+         (keyup.Enter)="agregarPorIntro()" <- no hagas esto, mejor llamar al agregarJuego() no necesito otro método ni la refLocal
+         // #txtAgregar
+  <button type="button" class="btn btn-outline-primary"
+         (click)="agregarJuego()"
+
+		VIDEO 242 RADIO BUTTONS-CHECKBOX Y SWITCHES 
+
+Los switches son como un checkbox comun y corriente para dos opciones,pero que luce diferente,luce de forma horizontal con un slider que se puede mover a los lados(tipico ON-OFF)
+Un checkbox es la tipica casilla cuadrada para aceptar Terminos y condicones
+Un radioButton permite elegir entre varias opciones(excluyentes unas de otras).
+
+		VIDEO 243 VALIDANDO RADIOS SWITCHES Y CHECKBOXES
+
+Queremos obligar a la persona a que tenga que seleccionar algo.Recuerda que lo primero que he hecho ha sido referenciar el formulario:
+
+<form  
+
+Fijate que es el atributo value el que tiene que corresponder.Mientras que ngModel se refiere a la key,value se refiere a el value(fijate que son como una key-value)
+
+export class ...
+
+persona = {
+  genero:"F" <- si la llamo F el value es F
+
+En la template:
+<input ... type="radio" name"genero" value="F" [(ngModel)]="persona.genero> Muy fácil
+
+Para los otros dos es incluso más fácil ya que sólo necesito el ngModel y el name.El value ya lo coge solo:
+<input type="checbox" ... requiredd
+    name="notificaciones"
+    [(ngModel)]="persona.notificaciones" 
+Haremos lo mismo pero con formularios reactivos en la siguiente seccion
+
+				SECCION 17 FORMULARIOS REACTIVOS 
+
+Lo bueno de los formularios reactivos es que la template queda limpia y es más pequeña.Toda la lógica la pasamos a la clase.
+Usar formularios reactivos permite más control sobre el formulario,puediendo usar getters o dar feedback al usuario de errores en la UI.
+
+¿Qué veremos en esta sección?
+Este es un breve listado de los temas fundamentales:
+
+1- Formularios Reactivos
+2- Lazyload y tareas relacionadas
+3- Validaciones propias de Angular
+4- Arreglos y objetos anidados
+5- FormBuilder
+6- FormGroup
+7- FormArray
+
+Esta sección continua en la siguiente con más temas relacionados a formularios reactivos, ya que como se podrán imaginar es bastante información que digerir, pero lo importante aquí es que comprendamos que Angular cuenta con varias maneras de manejar formularios.
+
+Muchos me pregunta cuál aproximación prefiero, y son los formularios reactivos, porque siento que tengo mayor control y más fácilmente puedo manipular el formulario, pero los formularios por template sirven mucho cuando son tareas simples o rápidas. Aunque en esos casos, muchas veces prefiero no utilizar formularios por template y simplemente tomo el valor que necesito con referencias locales. 
+Recuerda: si es poco por template,si es un form grande mejor reactivo.
+
+			VIDEO 248 CONTINUACION DEL PROYECTO
+
+Lo primero que necesito para usar formularios reactivos es importar en ese módulo el ReactiveFormsModule.Viene de @angular/forms:
+import { ReactiveFormsModule } from ' @angular/forms';
+
+Fijate que en angular/forms también tengo el FormsModule(el cual necesito para usar la directiva ngModel).
+Se recomienda sólo usar uno de los dos,o FormsModule con ngModel o ReactiveFormsModule y sus directivas.
+
+Para poder enlazar un formulario en el aproximamiento reactivo tengo que usar la directiva [formGroup]="propiedad".(Fijate que el formGroup es un formulario).En la clase hay que usar esta clase también:
+
+miForm: FormGroup = new FormGroup({
+  "nombreProducto":new FormControl("RX 6669gf"),
+  "otroCampo": new FormControl("valor")
+* Basicamente el form en sí es de tipo FormGroup y cada campo de tipo formControl.Despues lo enlazo en la template al <form> y a cada <input>
+
+<form [formControl]="miForm">
+<input formControlName="nombreProducto">
+*Puedo observar que no me libro de usar directivas.
+
+				VIDEO 249 SERVICIO FormBuilder
+
+Si bien para un formulario pequeño no habria problema en crear cada campo con un new FormControl,en un formulario grande quedaría mucho código repetitivo.
+La idea de esta clase FormBuilder es ayudarme a mi como desarrollador a crear formularios complejos(que deberá ser un Object) y no tener que crear tantas instancias de FormControl o FormArray.
+
+Como todo servicio hay que inyectarlo.Despues se usa su método de instancia this.fb.group({}).
+constructor( private fb: FormBuilder) {}
+
+* Fijate que cada campo tiene como value un Array.Esto es asi porque son tres campos ( [valor,validaciones, validaciones asincronas ] ).
+
+miFormulario: FormGroup = this.fb.group({
+  nombre: [value,validaciones,async validaciones],
+  precio: [0],
+  stock: [0]
+* Como puedo ver el código es mucho menor y más claro.
+
+				VIDEO 250 VALIDACIONES(Clase Validators)
+
+Recuerda que ahora tengo que hacer las validaciones en la clase,ya no puedo usar required o minLenght en la template.
+¿Como hago para decir que tiene que tener 3 letras o que es requerido?
+
+Recuerda que la segunda posición del array es para validadores sincronos(en tiempo real) y despues los asincronos(no son en tiempo real,tardarán unos segundos).
+
+Más adelante veremos estos validadores asincronos,pero de momento nos vale con los sincronos.Para usarlos necesito importar la clase Validators,que viene de angular/forms:
+* La ventaja de que Angular sea un framework es que todo lo que uso es compatible 100%.
+
+import { Validators } from "@angular/forms";
+
+ * fijate que las propiedades se llaman igual
+ nombre: [ "RTX 4080ti", [ Validators.required, Validators.minLength(3) ] ],
+ precio: [ , [Validators.required, Validators.min(0) ] ],
+ stock : [ , [Validators.required, Validators.min(0) ] ], 
+* En cuanto es más de un Validator tengo que usar un arreglo,pues la tercera propiedad esta reservada para los async validators.Es realmente sencillo usar validaciones en formularios reactivos en Angular.
+
+				VIDEO 251 MOSTRAR ERRORES CONDICIONALMENTE
+
+Lo bueno de trabajar con un Object es que puedo usar propiedades computadas para el *ngIf que condiciona el renderizado del mensaje de error:
+
+campoNoEsValido( campo: string) {
+  return this.miFormulario.controls[campo].errors && this.miFormulario.controls[campo].touched;
+
+Ahora en la template llamo al método con el nombre del campo y se computará:
+<span ... *ngIf="campoNoEsValido('nombre')"
+Y para cada campo lo mismo
+<span ... *ngIf="campoNoEsValido('precio')"> ...
+
+					VIDEO 252 SUBMIT DEL FORMULARIO
+
+Fijate que los formularios tienen el método markiAllAsTouched() para poder marcar todos los campos como tocados y asi saltar las validaciones(no confundir con markAsTouched que solo marca el formulario,pero no los campos):
+
+* Con esto cuando le dé a guardar saltarán todos los campos con los errores pertinentes.
+  guardar(){
+    if(this.miFormulario.invalid){
+      this.miFormulario.markAlllAsTouched();
+    }
+  }
+* Puedo ver que el efecto es espectacular,la experiencia de usuario es excelente.
+Por último,tras un posteo exitoso debería resetearlo con el método reset():
+
+  guardar(){
+    if(this.miFormulario.invalid){
+      this.miFormulario.markAllAsTouched();
+      return;
+    }
+    console.log(this.miFormulario.value)
+    this.miFormulario.reset(); <- importante hacer el full-reset
+  }
+
+Adicionalmente se le puede pasar un valor por defecto tras el reset o fijarlo con patchValue o setValue:
+* Con reset()
+this.miFormulario.reset( {
+nombre:"fdff"
+precio:1000
+ }
+ * con Setvalue 
+this.miFormulario.setValue({
+      nombre: "Graphic prehistorica",
+      precio: 3,
+      stock: 5000
+    })
+  }
+
+
+* patchValue vs setValue
+Las  diferencias entre un método y otro, es el lograr asignar el valor solo a un control en caso de tener varios.
+
+Por ejemplo, tenemos 2 controles: "nombre" y "edad".
+Con setValue tendrías que establecer el valor a ambos controles:
+
+formgroup.setValue ({nombre: 'Mocrosoft', edad: '25'});
+Mientras que con patchValue puedes establecer el valor solo a un control si lo deseas:
+formgroup.patchValue ({nombre: 'Mocrosoft'});
+
+Puedo ver que hay varias formas de establecer valores por defecto dependiendo de cuantos campos,etc...Sin embargo,se recomienda usar reset para hacer un full-reset de pristine,touched...
+
+			VIDEO 253 VALIDAR UN NUEVO CAMPO
+
+Para usar el FormBuilder tengo que inyectarlo en el constructor:
+constructor( private fb: FormBuilder){}
+Ya puedo crear un formulario:
+miFormulario: FormGroup = this.fb.group({
+  nombre: ["",[Validators.required,Validators.minLength(3)],] ...
+
+IMPORTANTE: el botón se habia quedado de tipo "button".Un botón que no sea de tipo submit no va a postear el formulario,asi que habia que cambiarle el tipo.
+Fijate que también podrías crear el evento (click) y llamar a la funcion que maneja el submit.Ambas opciones son válidas,pero si el botón es para el submit,mejor indicarle el tipo.
+Acuerdate de los tipos de los botones.También fijate que en Angular está metido tipo,validaciones,formularios,... no tengo apenas dependencias externas.
+
+					VIDEO 254 FormArray
+
+Recuerda que el formulario dinámico va a agregar campos en real-time.Este control va a ser un array de controles,logicamente,para declararlo tengo que usar this.fb.array([],Validators.xxx):
+
+miFormulario = this.fb.group({
+nombre:["",[Validators.required],],
+favoritos: this.fb.array([
+  this.fb.controls([],Validators) <- lo puedo resumir con ['Metal Gear'],['Samurai'] <- con los valores del control
+],Validators.xxx
+
+* El primer argumento de fb.array es el valor por defecto(un array de controles),el segundo las validaciones,como solo es required no es necesario que sea otro arreglo.
+  
+Para poder asignar este array se complica un poco la cosa,pero no mucho:
+  <label class="col-sm-3 col-form-label">Agregar</label>
+  <div class="col-sm-9" formArrayName="favoritos">
+    <div class="input-group" *ngFor="let favorito of miFormulario.controls.favoritos.controls;let i=index">
+      <input type="text" 
+         class="form-control" 
+         placeholder="Agregar juego favorito"
+         [formControlName]="i"
+         >
+* Lamentablemente la propiedad esta en miFormulario.controls.favoritos.controls,pero esto da un error.Hay que castearlo en la clase con un getter:
+
+  get favoritosArray(){
+    return this.miFormulario.get('favoritos') as FormArray;
+  }
+
+Ya puedo usar el getter por referencia y eliminar el error de la template.Recuerda que aparte de la directiva ngFor he necesitado el formControlName y formArrayName.Aunque sea un poco confuso es sencillo,solo es seguir los pasos.
+
+			VIDEO 255 AGREGAR CONTROLES AL FormArray
+
+Dado que estamos trabajando con formularios reactivos no puedo usar la directiva ngModel,pero si que puedo crearme un control en la clase:
+
+nuevoControl: FormControl = this.fb.control('',Validators.required);
+ (también puedo hacer new FormControl en vez de this.fb.control).
+Dado que ese input que quiero relacionar está fuera del formulario tengo que usar la propiedad formControl,ya que formControlName se refiere al formulario y no tenemos la propiedad nuevoControl en el formulario(ese input esta afuera del form a efectos practicos)
+
+      <input type="text" 
+         class="form-control" 
+         [formControl]="nuevoFavorito"
+         placeholder="Agregar juego favorito"
+         >
+* Tengo que usar corchetes dado que no es un string sino una propiedad. Fijate en lo útil que es ir imprimiendo los valores de cada control:
+   <span>nuevoFavorito</span>
+    <pre>{{ nuevoFavorito.value | json}}</pre>
+    
+    <span>nuevoFavorito</span>
+    <pre>{{ nuevoFavorito.valid | json}}</pre>
+  
+Para agregar un elemento lo tengo fácil con el getter anterior:
+
+  agregar(){
+    if(this.nuevoFavorito.invalid){ return; }
+    // de nuevo da igual usar fb.control o new FormControl
+    this.favoritosArray.push(this.fb.control(this.nuevoFavorito.value,Validators.required));
+    this.nuevoFavorito.reset();
+  
+  }
+Fijate que el control lo he limpiado con el método reset().
+
+Puedo evitar el posteo del formulario al dar al enter con:
+
+<form (ngSubmit)="guardar()" [formGroup]="miFormulario"  (keydown.enter)="$event.preventDefault()"> <- importante asinto
+
+*Para eliminar de un FormArray tengo que usar sus metodos,pues no es un array normal.
+
+eliminar(index:number){
+    this.favoritosArray.removeAt(index);
+  }
+				VIDEO 257 FORMULARIOS REACTIVOS
+
+Imaginemos que quiero pasarle una instancia de clase al formulario con unos valores por defecto:
+
+
+  miFormulario: FormGroup = this.fb.group({
+    genero: ["M",Validators.required],
+    notificaciones: [true, Validators.required]
+  })
+
+  persona = {
+    genero: "F",
+    notificaciones: true,
+  }
+  
+  constructor(private fb: FormBuilder) { }
+
+  ngOnInit(): void {
+    this.miFormulario.reset(this.persona)
+  }
+* Usualmente cuando quiero establecer información en un formulario lo haré en el ngOnInit.Para ello FormBuilder me provee de varios métodos como reset o setValue.
+Recuerda que  además debo enlazar mi formulario a la template con [formGroup]="propiedad" y cada campo que pertenezca a ese formulario que quiero controlar con la propiedad formControlName.
+ 
+Lógicamente sustiuirá al 'name',no pueden ir ambas.Para los checbox necesitaré el Validators.requiredTrue si quiero que ese checkbox tenga que estar en true.Además podria usar el operador spread y agregarle yo propieades al objeto que inicia el formulario si asi lo deseo:
+
+
+  miFormulario: FormGroup = this.fb.group({
+    genero: ["M",Validators.required],
+    notificaciones: [true, Validators.required],
+    condiciones: [false, Validators.requiredTrue]
+  })
+
+  persona = {
+    genero: "F",
+    notificaciones: true,
+
+  }
+  
+  constructor(private fb: FormBuilder) { }
+
+  ngOnInit(): void {
+    this.miFormulario.reset({
+      ...this.persona,
+      condiciones:false
+      )
+  }
+* Aunque sean muchas cosas puedo apreciar las inmensas posibilidades y la gran precisión que puedo tener al manejar un formulario,esté en Angular o no.
+
+			VIDEO 258 SINCRONIZAR OBJETO Y FORMULARIO  	
+
+1- Si simplemente quiero guardar en el objeto el valor del formulario cuando se postee(pero no está sincronizado,ojo) simplemente tengo que hacer una asignación.En este caso hay que quitar una propiedad,pues el objeto no tiene las condiciones:
+
+guardar(){
+ const formValue = { ...this.miFormulario.value } <- mejor por valor
+ delete formValue.condiciones;
+this.persona = formValue; <- asigno tras quitar lo que necesite quitar
+}
+
+2- Si por alguna razón necesito que además el objeto cambie en tiempo real se puede hacer en un formulario reactivo(ya que por esto se llaman reactivos).Hay que usar operadores RXJS.
+
+ * Puedo usar el operador valueChanges
+this.miFormulario.valueChanges.subscribe( (form) => {
+      console.log(form)
+ })
+Incluso puedo subscribirme solo a un campo:
+/ [ ] subscripcion a un único campo 
+    this.miFormulario.get('condiciones')?.valueChanges.subscribe( (condiciones) => {
+      console.log(condiciones)
+    })
+De nuevo si quiero quitar una condicion puedo usar el operador rest(dado que va a juntar las propiedades en uno no es spread):
+this.miFormulario.valueChanges.subscribe( ({condiciones, ...rest}) => {
+      this.persona = rest;
+      console.log(rest)
+    })
+
+		VIDEO 259 CONSEJOS PARA FORMULARIOS REACTIVOS
+
+Si necesito más información lo mejor es ir a la docu:
+https://angular.io/guide/reactive-forms
+Como desarrollador debo saber buscar información buena,asinto.
+
+			SECCION 18 VALIDACIONES PROPIAS Y ASINCRONAS
+
+Este es un breve listado de los temas fundamentales:
+1- Validaciones manuales
+2- Validaciones asíncronas
+3- Validar contra expresiones regulares
+4- Separar la lógica de validaciones
+5- Estado del formulario
+6- Mensajes de error personalizados
+
+Más adelante tendremos una sección de directivas, la cual es un excelente complemento para el manejo de errores de formularios reactivos, pero luego llegarán a ella.
+
+Por ahora me interesa que dominemos el flujo de información y validaciones de los formularios reactivos. Recuerden que todo lo que se haga en formularios Reactivos se puede hacer con los formularios por template, pero prefiero enfocar tiempo y esfuerzo en este tipo de formularios reactivos por la facilidad y control.
+Fijate que es importante el tema de las validaciones.
+
+				VIDEO 263-264 RUTAS Y LAZYLOAD
+
+Vamos a trabajar con validaciones asíncronas en el mismo proyecto anterior,el 06-formularios.
+#Tarea:
+1 crear un arreglo de items de menu(de nombre authMenu
+2 crear modulo auth y modulo auth-routing(recuerda que se podia pasar la flag --routing y crea dos modulos auth.module.ts y auth-routing.module.ts
+3 configurar las rutas
+  a. registroComponent (ruta 'registro')
+  b. loginComponent (ruta 'login')
+4 Hacer lazy load de ese módulos
+
+IMPORTANTE: cuando se dice que la ruta es ./auth/registro pero el componente está en auth/pages/registro/registroComponent lo que estoy haciendo es apuntar a dos rutas, a 'auth' que la resuelve el modulo padre:
+path:'auth',
+loadChildren: () => import(./auth/auth.module).then(m=>m.AuthModule) 
+* y despues apunto a 'registro en el modulo de rutas hijas:
+
+  path:'',
+    children: [
+      {
+        path: 'registro', <- a éste
+        component:RegistroComponent
+      },
+* Asi pues apuntar a /auth lo resuelve el modulo padre redirigiendo al hijo y ya apuntar a auth/registro me devuelve ese componente,no tiene nada que ver con la estructura de archivos,sino con el routing.
+
+				VIDEO 264 TEMPLATE DEL LOGIN
+
+Al usar un <input type="email"> en los dispositivos móviles se cambia el teclado y aparecen más opciones,como la arroba.Siempre que tenga un control tipo email en un formulario debo decir que es de ese tipo.
+
+<div class="row">
+  <div class="col">
+    <form autocomplete="off">
+       <!--  Control para el nombre -->
+      <div class="row mb-3">
+        <label for="" class="col-sm-3 col-form-label">Nombre</label>
+        <div class="col-sm-9">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Nombre del usuario"
+          />
+          <span class="form-text text-danger">Debe de ser en formato de nombre y apellido</span>
+        </div>
+      </div>
+* Asi con los 4 controles para nombre,nick y las passwords + el botón de submit
+
+				VIDEO 266 VALIDAR CONTRA UNA REGEXP
+
+Angular ya viene con una forma para trabajar expresiones integrada,pero para poder usarla hay que integrar los formularios reactivos en el módulo:
+Tips: no pulsar más que las flechas en modo multicursor para ir hasta el final o principio y que no salten de linea los multicursores.
+Selecciona el espacio vacio y siguiente ocurrencia para ser más asinto aún.
+
+Recuerda que al trabajar con formularios reactivos tengo que hacer yo la referencia mediante la propiedad [formGroup]="miFormulario" en la etiqueta <form>:
+<form (ngSubmit)="funcion()" [formGroup]="instancia de FormGroup de la clase"> <- recuerda que [] enlazan Clase con Template y () template con clase.Lo puedo ver perfectamente en el submit desde la template a la clase con el (ngSubmit)
+
+Fijate que sólo hacer esto no enlazará ningun campo,aun me falta ir por cada campo usando formControlName,etc... esto sólo enlazó el formulario de forma general y abstracta,por así decirlo.
+    <input
+       type="text"
+       class="form-control"
+       formControlName="nombre"
+       placeholder="Nombre del usuario"
+     />
+* No es necesario usar data-binding.En cuanto a las regexp en las validaciones sincronas tengo el método pattern que admite un string o una regexp:
+
+  nombreApellidoPattern : string = '([a-zA-Z]+) ([a-zA-Z]+)';
+  emailPattern: string = "^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$";
+
+  miFormulario: FormGroup= this.fb.group({
+  nombre:["",[Validators.required,Validators.pattern(this.nombreApellidoPattern)]]   , 
+  email:["",[Validators.required,Validators.pattern(this.emailPattern)]]    
+* Si bien puedo usar Validators.email es bastante flojo asi que Fernando nos proveyó de una regexp para el email más completa.
+
+			VIDEO 268 VALIDACIONES PERSONALIZADAS
+
+Si quisiera pasar una función mia como validación fijate que hay que pasarle la referencia,como todos los validadores,ya la ejecutará despues el programa:
+* Mi funcion validadora.Dado que recibe un FormControl se le suele llamar control y pasarle el tipo para el autocompletado
+ noPuedeSerStrider (control: FormControl) {
+   const valor = control.value?.trim().toLowerCase();
+    if(valor==="strider"){
+      //NOTA regresar un Object será considerado un error,dado que debe ser null el error
+      return {
+        noStrider:true
+      }
+    }
+    //NOTA cuando se regresa un null en una validación es que la pasa,es como un return true para una funcion boleana
+    return null; }
+  
+  miFormulario: FormGroup = this.fb.group({
+     email: ['', [Validators.required, Validators.pattern(this.emailPattern)]],
+    username: ['', [Validators.required,this.noPuedeSerStrider]], <- la paso como validación sincrona
+  });
+
+					VIDEO 269 SEPARAR LA LÓGICA DE LAS VALIDACIONES
+
+Es conveniente separar esas propiedades que creé en la clase,dado que no pertenecen a esa clase realmente,las puedo y debo separar.En el folder 'shared' están perfectamente,dado que es algo compartido.Creo otra carpeta hija llamada 'validators',por ejemplo.
+
+*En ese archivo validators.ts en shared/validator =>
+import { FormControl } from '@angular/forms';
+
+export const nombreApellidoPattern: string = '([a-zA-Z]+) ([a-zA-Z]+)';
+export const emailPattern: string = '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$';
+
+export const noPuedeSerStrider = (control: FormControl) => {
+    const valor = control.value?.trim().toLowerCase();
+    if(valor==="strider"){
+      //NOTA regresar un Object será considerado un error
+      return {
+        noStrider:true
+      }
+    }
+    //NOTA cuando se regresa un null en una validación es que la pasa,es como un return true para una funcion boleana
+    return null;
+  }
+* Tendré que pasar de método a función,thought.Normalmente estas validaciones se usan como un Service en Angular.Si además tuviera que llamar a otro servicio o hacer peticiones REST,etc entonces si que debe ser un servicio y no un archivo cualquiera(fijate que esto es importante).
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ValidatorService {
+
+  nombreApellidoPattern: string = '([a-zA-Z]+) ([a-zA-Z]+)';
+  emailPattern: string = '^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$';
+
+  noPuedeSerStrider = (control: FormControl):ValidationErrors | null => {
+    const valor = control.value?.trim().toLowerCase();
+    if(valor==="strider"){
+      //NOTA regresar un Object será considerado un error
+      return {
+        noStrider:true
+      }
+    }
+    //NOTA cuando se regresa un null en una validación es que la pasa,es como un return true para una funcion boleana
+    return null;
+  }
+  constructor() { }
+}
+* Lógicamente para este proyecto tan pequeño el archivo con las funciones y constantes a exportar me vale,pero en la vida real normalmente será un servicio.
+
+						VIDEO 270 VALIDAR CONTRASEÑAS IGUALES
+
+Para validar las contraseñas usaremos nuestra propia validación.Como segundo argumento del método this.fb.group({},{validators:[]}) puedo usar mis propias validaciones.
+
+  camposIguales(campo1:string,campo2:string){
+    // NOTA en formGroup tengo todo el formulario
+    return ( formGroup: AbstractControl):ValidationErrors | null => {
+      // console.log(formGroup)
+      const pass1 = formGroup.get(campo1)?.value;
+      const pass2 = formGroup.get(campo2)?.value;
+
+      if( pass1 !== pass2) {
+		formGroup.get(campo2).setErrors({noIguales:true});
+        return { noIguales: true}
+      }
+      
+      formGroup.get(campo2).setErrors({noIguales:true});
+      return null;
+
+    }
+  }    
+
+* Fijate que es un método que retorna una función.Esto debe ser asi,ya que pasaré la referencia al método a esa propiedad validators y al llamarse llamará a la función,que se resolverá en errors:null o en {noIguales:true} habiendo por tanto un error.
+Dado que tengo la representación de todo el formulario,le puedo añadir errores a cualquier campo de éste con get(campo).setErrors(),entre otras cosas.
+Fijate que como al principio no van a hacer match esos campos,pues no se puede editar en dos campos a la vez,ese error estará fijado,asi que hay que quitarlo al pasar el if,(o sea cuando sean iguales).
+
+				VIDEO 271 INTRO A VALICACIONES ASINCRONAS
+
+En las últimas versiones de Angular no puedo usar peticiones HTTP en el tercer argumento destinado a las validaciones asíncronas.Si que puedo usar cualquier otra funcionalidad asincrona,pero no peticiones Http.
+Vamos a usar json-server para simular un backend,dado que no es un curso de backends.
+Recuerda que simplemente se instala en global y despues apunto a cualquier .json con el comando json-server --watch file.json.Lo abrirá en localhost:3000(alli me dirá que más creó,como por ejemplo localhost:3000/usuarios).
+
+Los endpoints estarán relacionados con las propiedades.Cada propiedad será uno y será un arreglo:
+{
+    "usuarios": [
+        {
+            "id": 1,
+            "email": "test1@test.com",
+            "username": "test1"
+        },
+        {
+            "id": 2,
+            "email": "test2@test.com",
+            "username": "test2"
+        },
+        {
+            "id": 3,
+            "email": "test3@test.com",
+            "username": "test3"
+        }
+    ]
+}
+					VIDEO 272 VALIDACIONES 		
+
+Recuerda que para usar peticiones tengo que importar el módulo HttpClientModule en el modulo main de la aplicación(no en el servicio,sino en lo más alto de la app).
+Despues declaro un servicio donde quiera(será en shared) e  inyecto la clase HttpClient.Ya puedo hacer peticiones.
+* En este caso tendremos que implementar la interfaz AsyncValidator y su método validate:
+
+export class EmailValidatorService  implements AsyncValidator{
+
+  constructor(private http:HttpClient) { }
+
+  validate(control: AbstractControl): Observable<ValidationErrors | null> {
+    const email = control.value;
+    console.log(email)
+    return this.http.get<any[]>(`http://localhost:3000/usuarios?q=${email}`)
+  }
+}
+* No usaremos un simple console.log sino que mediante el operador map retornaré lo que quiera(en este caso o un null como error o un Object que por ello hará saltar el error):
+  
+validate(control: AbstractControl): Observable<ValidationErrors | null> {
+    const email = control.value;
+    console.log(email)
+    return this.http.get<any[]>(`http://localhost:3000/usuarios?q=${email}`)
+    .pipe( map( resp => {
+      return ( resp.length === 0)
+        ? null
+        : {emailTomado:true}
+    }));
+  }
+* Fijate que usar cualquier operador rxjs me obliga a usar el método pipe().
+En cuanto al envio de tokens cambia la interfaz: this.emailValidator.emailValidatorWithParams('aqui tu token') ] <- ya se verá esto
+
+				VIDEO 273 ESTADO DEL FORMULARIO y OPERATOR DELAY 
+
+Usar validaciones asíncronas hará cambiar el estado del formulario durante unos instantes.Hay tres estados del formulario: válido, no-válido y pending(pendiente de validación).
+Para poder ver mejor esto vamos a usar el operador delay además,que permite retrasar una acción los milisegundos que se desee.En este caso da igual antes o despues del map:
+    .pipe( 
+      delay(3000), 
+      map( resp => {
+      return ( resp.length === 0)
+        ? null
+        : {emailTomado:true}
+    }));
+
+Esto me permite hacer cosas tan chulas como desactivar el botón mientras el formulario esta en estado pending:
+       [disabled]="miFormulario.pending"
+* Recuerda que los tres estados de un form son valid,invalid y pending(son los 3 booleans).
+
+					VIDEO 274 ERRORES PERSONALIZADOS
+
+Podemos hacer mensajes diferentes,por ejemplo uno que sea que el correo es obligatorio, otro que diga que no es un correo válido y otro para cuando el correo ya exista.
+Habrá que crear más funciones para ello:
+*Fijate como accederé a esa propiedad emailTomado que me inventé,con lo que era más importante de lo que parecía
+  emailRequired() {
+    return (
+      this.miFormulario.get('email')?.errors?.required &&
+      this.miFormulario.get('email')?.touched
+    );
+
+  }
+    
+  emailInvalid() {
+    return (
+      this.miFormulario.get('email')?.errors?.pattern &&
+      this.miFormulario.get('email')?.touched
+    );
+
+  }
+
+  emailTaken() {
+    return (
+      this.miFormulario.get('email')?.errors?.emailTomado &&
+      this.miFormulario.get('email')?.touched
+    );
+Ahora en la template puedo usar varios *ngIf:
+ <span class="form-text text-danger"
+          *ngIf="emailRequired()"
+          >El email es obligatorio</span>
+          <span class="form-text text-danger"
+          *ngIf="emailInvalid()"
+          >El email no tiene formato válido</span>
+          <span class="form-text text-danger"
+          *ngIf="emailTaken()"
+          >El email ha sido tomado</span>
+* Recuerda que para acceder al error de la regexp fue con get(campo).errors?.pattern y required para el requerido y emailTomado para la petición.
+Puedo observar las inmensas posibilidades que ofrece Angular para el tratado de formularios.
+
+				VIDEO 276 MENSAJES DE ERROR PERSONALIZADOS
+
+El inconveniente de la forma anterior es que hay bastante código repetitivo.Podemos resumir lo anterior con un getter,dado que será llamado en el onChange del control,igual que React y se volverá a comprobar a si mismo el campo(que interesante,asinto):
+
+  get emailErrorMessage(): string {
+    const errors = this.miFormulario.get("email")?.errors;
+    return errors?.required && "Email requerido"
+    || errors?.pattern && "formato inválido"
+    || errors?.emailTomado && "email ya tomado";
+  }
+* En la template llamo al getter,que será llamado en cada cambio:
+     <span class="form-text text-danger"
+          *ngIf="campoNoValido('email')"
+          >{{emailErrorMessage}}</span>
+Muy interesante.
+
+							SECCION 19 SELECTORES ANIDADOS
+
+Esta sección es una extensión de los formularios reactivos, la cual cubre un tema muy preguntado, que es el manejo de selectores anidados.
+Es decir, un selector muestra información, y al cambiar, carga información basado en la primera selección y luego llegamos hasta un tercer nivel.
+Es un ejercicio que puede verse complicado, pero vamos paso a paso, llenando select por select y al final les enseño una forma de organizar mejor el código usando RXJS.
+
+										VIDEO 280 INICIO PROYECTO

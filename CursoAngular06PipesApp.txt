@@ -1,0 +1,607 @@
+SECCION 10 PIPES EN ANGULAR
+
+Un Pipe no es má que una forma de transformar la información que está puesta en el HTML,es decir,que ya está visualmente,le pasamos el pipe y le cambiamos la vista anterior a otra cosa.
+Son sólo cmbios en la vista,no son persistentes ni cambian el código
+Angular ofrece pipes para por ejemplo capitalizar strings,o pasarlos a minúsculas.
+No hay que hacer nada, simplemente usar {{ thing | pipe}}.
+Veremos esto junto con la tecnología PrimeNG.PrimeNG es un repositorio de componentes que puedo usar en mi proyecto
+Estos componentes traen su template y su funcionalidad.Para trabajar con PrimeNG necesitaré importar su módulo.
+
+* Esta sección es de mis favoritas del curso, veremos temas sobre Pipes y transformación visual de la data, pero también decidí mezclarlo con otro tema muy solicitado que es PrimeNG (Más adelante hay también una sección con muchos componentes de Angular Material), pero esta sección pretende enseñarles muchas cosas interesantes, aparte de los Pipes de Angular
+
+Este es un breve listado de los temas fundamentales:
+
+1- Todos los Pipes de Angular a la fecha
+2-Uppercase
+3-Lowercase
+4-TitleCase
+5-Date
+6-Decimal
+7-Currency
+8-Percent
+9-i18nSelect
+10-i18Plural
+11-KeyValue
+12-Json
+13-Async
+
+14-PrimeNG
+Módulo especializado para módulos de PrimeNG
+
+PrimeNG es un paquete de componentes estilizados que contienen funcionalidades basadas en Angular para crear aplicaciones elegantes, hermosas y funcionales rápidamente.
+
+Recuerden que PrimeNG no es el único, hay muchos pero la mayoría funcionan de formas similares, importando módulos,por eso mi objetivo de entrenarlos bastante bien con el manejo de módulos en todo momento para que nos familiaricemos con esta métodología.
+
+					VIDEO 129 INICIO DEL PROYECTO
+
+Fernando provee dos enlaces.El primero es a la documentación oficial de Angular sobre los pipes:
+1-https://angular.io/api?query=pipe
+El segundo es a PrimeNG: https://www.primefaces.org/primeng/
+PrimeNG es un conjunto de componentes personalizados ya estilizados.
+Cuando quiera trabajar con Pipes debo importar el paquete common.Los pipes solo transforman la data de manera visual.
+
+			VIDEO 131 INTRODUCCION A LOS PIPES DE ANGULAR
+
+Si pusiera entre dobles llaves un string cualquiera:
+<h1> {{Hola mundo }} </h1> dará error ya que espera una expresión de Javascript(podria hacer esto {{ 'Hola mundo' }} ya que eso es un string en javascript si lo que quiero es imprimir ese texto.
+Recuerda que los pipes no hacen cambios en las variables u objetos.Para trabajar con un pipe simplemente se pone el caracter pipe '|' y el pipe.
+
+<h1>{{ nombre | titlecase}}</h1>
+<h1>{{ valor | number}}</h1>
+<h1>{{ obj | json | titlecase }}</h1>
+
+Incluso puedo concatenar pipes.Los pipes no mutan nada,el valor del number será 1000 aunque vea 1,000 como un string.Nunca modifican la data que reciben como argumento.Cuando estemos creando nuestros pipes personalizados y le pasemos un objeto,a pesar de que todo es pasado por referencia en Javascript,Angular rompe esa referencia con lo que podríamos modificar o mutar ese objeto que estamos recibiendo como argumento con la seguridad de que no voy a modificar el objeto original,ya que estaré trabajando con una copia(referencia por valor) 
+
+											VIDEO 132 INSTALAR PRIMENG
+
+Para poder usar PrimeNg hay que hacer dos instalaciones,una para el core y otra para los iconos,con el gestor npm(aparte de los estilos):
+>npm install primeng --save
+>npm install primeicons --save
+
+* No hacen falta las flags,son de antes(ahora ya van a produccion por defecto) y no hace falta usar dos comandos:
+>npm install primeng primeicons
+
+* Deberia verlos en las dependencias del package.json
+ "primeicons": "^4.1.0",
+ "primeng": "^12.0.1",
+
+Aún faltaría importar los estilos de los iconos,del tema que eliga y del core entero.Hay varios lugares donde puedo importar esto:
+
+node_modules/primeicons/primeicons.css
+node_modules/primeng/resources/themes/saga-blue/theme.css
+node_modules/primeng/resources/primeng.min.css
+
+Los vamos a poner en el angular.json,en laa propiedad styles:[].Webpack compilará e inferirá todo al hacer el build.Hay que importarlos como strings:
+
+*En el angular.json(en architect.build.options.styles[])
+     "styles": [
+       "src/styles.scss",
+       "node_modules/primeicons/primeicons.css",
+       "node_modules/primeng/resources/themes/vela-blue/theme.css",
+       "node_modules/primeng/resources/primeng.min.css"
+       ],
+
+A partir de ahora puedo usar cualquier componente PrimeNg,pero cada componente es un módulo,asi que tengo que importarlo y especificarlo en el decorador @NgModule del módulo principal(recomendable elevar estas importaciones,para poder usarlo en toda la aplicación).
+
+Despues de importar el módulo ya puedo usar las directivas o selectores en la template.Lo veremos en el siguiente video
+Fijate que PrimeNg está diseñado agnóstico,lo que me permite cambiar entre Material Design o Bootstrap 'on the fly'(al vuelo)
+
+						VIDEO 133 USAR COMPONENTES PRIMENG Y ESTILO GLOBAL
+
+Recordemos que hay que importar cada componente como un módulo:
+
+import {ButtonModule} from 'primeng/button';
+
+Button is either applies as a component using p-button element or a directive using pButton attribute. Directive enhances an existing button whereas p-button is an element on its own.
+
+* Despues puedo usar o bien la directiva sobre un boton existente o usar el selector adecuado.
+<button pButton type="button" label="Click" ></button>
+<p-button label="Click" ></p-button>
+
+Ahora queremos usar algun tema global.Si voy a la carpeta node_modules veré que tengo node_modules/primegn ya que lo instalé con npm.Aqui hay un montón de temas,pero sólo los que especifique en el angular.json irán al bundle de la aplicación.
+En estos archivos estarán definidas fuentes y colores por cada tema asi que vamos al que estamos usando (node_modules/primeng/themes/vela-blue/vela-blue.css(el que sea) y me traigo la font-family al archivo global.
+
+* En el style.css me traigo los valores del módulo
+:root {
+  --surface-a:#1f2d40;
+  --surface-b:#17212f;
+  --surface-c:rgba(255, 255, 255, 0.03);
+  --surface-d:#304562;
+  --surface-e:#1f2d40;
+  --surface-f:#1f2d40;
+  --text-color:rgba(255, 255, 255, 0.87);
+  --text-color-secondary:rgba(255, 255, 255, 0.6);
+  --primary-color:#64B5F6;
+  --primary-color-text:#212529;
+  --font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+}
+
+
+html,body {
+    margin: 10px;
+    background-color: var(--surface-b);
+    font-family: var(--font-family);
+
+}
+
+.text-layout {
+    color: var(--text-color);
+}
+
+									VIDEO 34 CARDS E ICONOS 
+
+Tarea 1.Implementar un Icon
+De la doc oficial:
+
+1- Label
+El texto del botón se define usando la property 'label'
+<button pButton type="button" label="Click" ></button>
+
+2- Icons
+El iconoñ en un botón se especifica con el atributo 'icon' y la posición es customizada con el atributo 'iconPos'.Por defecto está a la izquierda.Si quiero simplemente mostrar el icono,puedo dejar el texto vacío en el atributo 'label'
+<button pButton type="button" label=""
+icon="pi pi-check" iconPos="left"></button>
+
+Resumen: para usar los iconos hay que usar los atributos icon e iconPos,no hay que importar nada más.Tengo visión sobre ellos en toda la aplicación
+
+También tienen sus propios colores que puedo aplicar con sus clases:
+
+<button pButton label="texto" icon="pi pi-icon" iconPos="left" class="p-button-help">
+Las clases son p-element-danger | warning | info etc...
+El atributo icon siempre es igual("pi pi-class")porque podria usar fa(font-awesome) u otros.
+
+Tarea 2.Implementar una Card
+
+Primero hay que traer el componente:
+import {CardModule} from 'primeng/card';
+
+Despues uso el selector(ya que no puedo usar la directiva)
+
+<p-card>
+    Content
+</p-card>
+
+A partir de aqui puedo crear un header,un subheader,un footer...
+
+<p-card header="header" subheader="texto en gris" [style]="{width:'45px'}>
+    
+  <ng-template pTemplate="header">
+        Header content here
+   </ng-template>
+
+    <ng-template pTemplate="footer">
+        <p-button label="Save" icon="pi pi-check" styleClass="p-button-help"></p-button>
+        <p-button label="Cancel" icon="pi pi-times" styleClass="p-button-secondary"
+        [style]="{'margin-left':'.5em'}"
+        ></p-button>
+    </ng-template>
+Fijate que la <ng-template pTemplate="header"> lleva un atributo extra.
+
+La directiva [style]="{'key':'value'}" si la key es una única palabra no necesita comillas simples,ya que Javascript tiene problemas con el guíon de las palabras compuestas [style]="{'border-width':'.5em'}"
+La directiva styleClass me permite pasarle clases con colores,en este caso ya no es class como con el botón sino styleClass.
+
+Como nota adicional puedo enlazar los valores de la tarjeta con propiedades de mi clase como siempre con dos formas,usando [header]="prop" lo cual enlazará todo.incluso puedo usar pipes:
+<p-card [header]="nombre | titlecase"
+
+También puedo usar las dobles llaves para strings.
+<p-card header="{{nombre | titlecase }}"
+
+Fernando deja la duda de como resolver si importamos 15 componentes,lo cual derivará en 15 importaciones y 15 posiciones nuevas del arreglo.Terminaremos moviendo esto a un módulo,por motivos de limpieza y legibilidad(esa es la solución pues).
+
+							VIDEO 135 PRIMENG MODULE
+
+Es conveniente ya optimizar nuestro código porque conforme vayamos añadiendo más componentes el main module crecerá de manera descontrolada.
+Creemonos un módulo para centralizar esto:
+>ng g m primeNg <-el nombre da igual pero que sea identificativo 
+
+Fijate que en este módulo lo que tengo que hacer es exportar los componentes simplemente:
+
+* En el PrimeNgModule
+import { NgModule } from '@angular/core';
+
+
+import { ButtonModule } from 'primeng/button'
+import { CardModule } from 'primeng/card';
+
+@NgModule({
+  declarations: [],
+  exports: [
+    ButtonModule,
+    CardModule,
+  ]
+})
+export class PrimeNgModule { }
+* Solo falta requerirlo en el main module.
+
+						VIDEO 136 MENU BAR CON PRIME NG
+
+En este video vamos a implementar una barra de menu.Pero primero vamos a crear la estructura del proyecto.Asi que creo la carpeta shared y el modulo ventas.
+* Usualmente se recomienda que cuando se crea estas primeras carpetas descendientes de App se cree un modulo para ellas.Asi que lo hacemos:
+>ng g m shared
+>ng g m ventas
+Dentro de ventas creo los folder interfaces,pages y pipes.Ahora si creo el componente menu | menubar que irá en shared:
+>ng g c shared/menu --skip-tests --is
+		Los componentes 'shared' necesito exportarlos,pues es su naturaleza.
+
+Tras importar/exportar todo y renderizar en el app.component.html el <app-menu> en éste último creo la barra de menú:
+
+import {MenubarModule} from 'primeng/menubar';
+import {MenuItem} from 'primeng/api';
+
+* El selector <p-menubar> recibe un arreglo de items
+<p-menubar [model]="items"></p-menubar>
+Este arreglo se inicializa en el ngOnInit y logicamente hay que declarar una propiedad 'items' que es un array de MenuItem:
+
+items: MenuItem[];
+
+    ngOnInit() {
+        this.items = [
+            {
+                label:'File',
+                icon:'pi pi-fw pi-file',
+                items:[
+                    {
+                        label:'New',
+                        icon:'pi pi-fw pi-plus',
+                        items:[
+                        {
+                            label:'Bookmark',
+                            icon:'pi pi-fw pi-bookmark'
+                        },
+                        {
+                            label:'Video',
+                            icon:'pi pi-fw pi-video'
+                        },
+
+                        ]
+                    },  .....
+
+Recuerda que un MenuBar recibe un Model con toda la data.Fijate que el componente 'shared' también tuvo que importar el primeNGModule pero esto no es importante porque Angular ya lo tiene en caché desde que cargo el App.module.ts.
+De echo,como no lo usará este componente vamos a eliminarlo de alli, e importar sólo ese modulo <tonto> en cada componente que REALMENTE SI USE UN COMPONENTE PRIMENG
+
+							VIDEO 137 AÑADIENDO RUTAS
+
+Implementemos el router de Angular.Esta vez lo hacemos desde cli con la flag --flat para que no genere una carpeta.:
+>ng g m appRouter --flat
+De momento creamos las rutas manualmente,pero también hay una flag para implementar el router.
+Recuerda que el modulo para las rutas es el RouterModule y que hay que usar sus métodos estáticos forRoot() o forChild()
+Creemos las páginas antes de crear el arreglo de rutas.Van en ventas:
+>ng g c ventas/pages/basicos --skip-tests -is <- asi con las 4 pages.
+
+Recuerda que las rutas son de tipo Routes:
+
+const routes: Routes = [
+  {
+    path:'',
+    component: BasicosComponent
+  },
+  {
+    path:'numeros',
+    component: NumerosComponent
+  },
+  {
+    path:'**',
+    redirectTo:''
+  }
+
+Y siempre hay que cerrar las rutas de la API con un 404Component o un redirectTo el home.
+Además las rutas las voy a usar fuera asi que hay que exportarlas en el ventas.module,además de declararlos.
+Aun falta exportar el Router,acuerdate y usar el selector <router-outlet> en el punto que quiera en la aplicación.
+Recuerda que crear un routing es crear el modulo,crear las rutas,importarlas al RouterModule.forRoot y exportarlas(4 pasos).
+
+				VIDEO 138 CAMBIAR RUTAS CON EL MENU BAR
+
+Queremos cambiar el componente a renderizar al hacer click en un menuItem.Al trabajar con PrimeNG tenemos un inconveniente.
+Sin PrimeNg sería tán fácil como usar un <a con la propiedad routerLink:
+<a routerLink="no-comunes"></a>
+
+Pero de alguna manera tengo que pasar esto al componente <p-menubar>.Lo que vamos a hacer es crear el objeto 'items' desde 0.Es en este objeto donde usaremos el router(recuerda que es un array de objetos)
+
+const items = [{
+  label: 'Pipes de Angular',
+  icon: 'pi pi-desktop',
+  items: [
+    {
+      label: 'Textos y Fechas',
+      icon: 'pi pi-align-left',
+      routerLink: '/' <- si va a / tengo que ponerlo,los demás es opcional 
+    },
+    {
+      label: 'Numeros',
+      icon: 'pi pi-thing',
+      routerLink: '/numeros' <- el slash es opcional 
+    }
+  ]
+}]
+
+Como puedo observar todo se basa en la anidación y en usar las propiedades label para el texto a mostrar,icon para el icono, items[] para anidar un nivel y routerLink para especificar una ruta al hacer click
+
+Para terminar en el <p-menubar [model]="items"> podemos mandar otros componentes.Por ejemplo,mandaremos una imagen:
+<p-menubar [model]="items">
+  <img src="./favicon.ico">
+* La ruta hay que pasarla desde el root.Ya veremos más sobre esto.
+
+					VIDEO 139 PRIMENG FLEX
+
+PrimeFlex es una libreria CSS  con varios helpers como el grid system,el flexbox,spacing,elevation y más.Aunque no es requerido es altamente recomendado usar PrimeFlex cuando se esté usando PrimeNG.Está disponible como un módulo o paquete npm:
+>npm install primeflex <- 
+
+* Aún falta importar el archivo al array de styles en el angular.json:
+       "styles": [
+              "src/styles.scss",
+              "node_modules/primeicons/primeicons.css",
+              "node_modules/primeng/resources/themes/vela-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeflex/primeflex.css" <- ESTA DE AQUI
+            ]
+Como es un archivo que colocamos en el angular.json hay que reiniciar el servidor para que el webpack tome los archivos nuevos y los sirva en nuestra aplicación.
+
+FlexBox no es difícil,veamos como crear una row con 3 divs de 4 columnas(son 12 columnas de ancho también)
+
+<div class="grid">
+   <div class="col-4"></div>
+   <div class="col-4></div>
+  <div class="col-4"></div>
+</div>
+NOTA: En la version 3.0.0 de primeFlex, las clases ya no van con el prefijo "p-"(eran p-grid o p-col-4..., ahora solo es "grid" o "col-4", por ejemplo.
+Para las columnas es md:col-6 en vez de col-md-6 o sm:col-12 en vez de col-sm-12
+
+ * Simplemente en vez de row se usó p-grid.Sigamos añadiendo una tarjeta en cada div de 4 columnas:
+
+<p-card header="uppercase"><p-card> ...
+
+
+			VIDEO 140 PIPES UPPERCASE,LOWERCASE Y TITLECASE
+
+Fijate que al traer el módulo de las tarjetas ya tendré acceso a <p-header> o <p-footer>.Normalmente un módulo traerá los submodulos que necesite,igual que un MenuBar por ejemplo.
+
+  <div class="col-4">
+      <p-card 
+        header="uppercase pipe"
+        [subheader]="nombreLower">
+           {{ nombreLower | uppercase}}
+      </p-card>
+   </div>
+
+   <div class="col-4">
+      <p-card
+      header="lowercase pipe"
+      [subheader]="nombreUpper | lowercase"
+      >
+      {{ nombreUpper | lowercase}}
+   </p-card>
+   </div>
+
+Estos tres pipes no tienen complicación alguna.Simplemente aplicarlos donde lo necesite.
+
+					VIDEO 141 PIPE PARA DATES
+
+Este es un pipe sumamente interesante.La documentación es un poco confusa.Su sintaxis es:
+{{ value_expression | date [ : format [ : timezone [ : locale ] ] ] }}
+
+* Esto se resume en que básicamente le puedo mandar argumentos al pipe(format | timezone | locale).Veamos el argumento formato de momento.
+
+Si imprimo una propiedad fecha:Date= new Date() veré esto:
+
+>Fri Jul 23 2021 14:23:13 GMT+0200 (hora de verano de Europa central)
+
+Si le paso por el pipe date sin argumentos vendrá en formato mediumDate(mes dia año) pero date es un pipe que puede recibir varios argumentos.Para pasar argumentos se usa expresssion | date:'argumento'
+
+<li> {{ fecha | date:'short }}</li>
+* Las comillas pueden ser simples o dobles.
+
+   <li>{{fecha  }}</li>
+   <li>{{fecha | date }}</li>
+   <li>{{fecha | date:'short' }}</li>
+   <li>{{fecha | date:'long' }}</li>
+
+Fri Jul 23 2021 14:52:14 GMT+0200 (hora de verano de Europa central)
+Jul 23, 2021
+7/23/21, 2:52 PM
+July 23, 2021 at 2:52:14 PM GMT+2
+
+Esto viene en la documentación,lo que devuelve cada uno.Para crear una fecha custom me apoyo en esa documentación:
+<li>{{ fecha | date:'MMMM yy dd H:m:s a' }} </li> <- o la que yo quiera
+
+				VIDEO 142 PIPE PARA CAMBIAR EL IDIOMA
+
+Cada pais tiene sus pequeñas diferencias,en unos usarán la coma para separar los miles,en otros quizás no usen el punto para separar decimales.
+Por el momento veamos como hacer la salida de las fechas anteriores a español.
+Usualmente es una configuración que se realiza en el app.module.ts.Hay que realizar dos importaciones,llamar a una función y resgistrar el idioma que yo quiera como global a toda la app:
+
+// Importar el idioma que yo quiera desde el framework.Importar la función que registra ese idioma en la app y ejecutarla con el idioma que traje
+import localeEs from '@angular/common/locales/es-HN';
+import { registerLocaleData } from '@angular/common'
+registerLocaleData( localeEs );
+// Con hacer esto ya tengo registrado el español de Honduras,pero aun no lo he fijado como global en la aplicación.Para ello usaré la propiedad providers del decorador @NgModule:
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    VentasModule,
+    SharedModule
+  ],
+  providers: [{
+    provide: LOCALE_ID,useValue:'es-HN' <-- le paso el valor en el useValue,la CONSTANTE LOCALE_ID hay que traerla del core
+  }],
+* Aqui puedo ver que la constante esta en el core del framework
+import { LOCALE_ID } from '@angular/core';
+
+				VIDEO 143 DIFERENTES TIMEZONES Y DIFERENTES IDIOMAS
+
+Imaginemos que no quiero ver el GMT de mi máquina(el cual se coge por defecto) sino que quiero ver otro cualquiera.Para poder hacer esto vamos a mandar el segundo argumento al pipe date.Simplemente se le concatenata otros ':arg'.Veamoslo:
+<li>{{ fecha | date:'long':'GMT-6' }}</li>
+*Simplemente hay que pasarle un segundo argumento con GMT + o - Number.
+
+NOTA: si quiero saber mi GMT puedo simplemente imprimir un string vacío:
+<li> {{ fecha | date:'long':'' }} </li> 
+Puedo ver esto como salida:
+- 23 de julio de 2021 a las 17:49:04 GMT+2
+
+El tercer argumento sirve para cambiar a un idioma,pero hay que importarlo igual que hicimos con el es-HN(por defecto Angular sólo tiene visión sobre el inglés o 'en')
+<li>{{ fecha | date:'long':'':'fr' </li> <- Esto dará fallo hasta que no importe el francés a la aplicación
+import LocaleFr from '@angular/common/locale/fr';
+registerLocaleData(LocaleFr) <- en cuanto registre el idioma lo puedo usar.Esto no es lo mismo que fijarlo como idioma global,asinto -_-
+
+			VIDEO 144 PIPE DECIMALPIPE PARA NUMEROS DECIMALES
+
+El DecimalPipe transforma un número en un string,formateado acorde a las reglas locales(separadores de miles,caracter del punto decimal adecuado...).La sintaxis es:
+{{ value_expression | number [ : digitsInfo [ : locale ] ] }}
+* En realidad se usa con la palabra 'number' aunque pudiera pensarse que era con decimal.Esto a veces confunde.Acepta argumentos.Fijate que leer un numero grande como 234234552525.252 en realidad que es?23 millones? 234 millones?.Es buena idea formatear numeros grandes.
+Los argumentos digitsInfo y locale por defecto están en undefined.Siempre van como string,acuerdate.
+
+output | number:'4.1-5' <- 4 enteros y de 1 a 5 decimales
+0,002.45645 <- aunque era un 2 le pedí 4 enteros,como tiene 5 decimales pone los 5
+output | number :'4.3-3' <- 4 enteros y 3 decimales aunque tenga menos
+0,002.300 <- siempre tendrá 3 decimales.
+* el punto es el separador
+
+Si se pone 1.4-4 pudiera parecer que solo quiero un numero entero,pero en realidad cogeré todos.Es lo mismo que poner '.4-4'.Si no especifico la parte positiva o si le paso un 1 cogerá toda ella.
+* NOTA: puedo usar iconos de PrimeNG para la currency,como por ejemplo el dollar:
+<i class="pi pi-dollar></i>
+{{ ventas | number:'1.4-4':'fr' }}
+* Puedo ejecutar operaciones sobre la variable antes,ya que el pipe se va a ejecutar sobre la expresión resultante en realidad:
+{{ ventas *2 | number:'1.4-4:'es' }} <- primero va a multiplicar por dos
+
+				VIDEO 145 CURRENCY PIPE Y PERCENT PIPE
+
+El Curreny Pipe transforma un número a un string currency,de nuevo formateado a las reglas locales para separadores de miles,punto decimal,etc...Su sintaxis es:
+
+{{ value_expression | currency [ : currencyCode [ : display [ : digitsInfo [ : locale ] ] ] ] }}
+
+Como la aplicación está por defecto en inglés(en) la salida del pipe currency será a USD (dolares americanos):
+{{ ventasNetas | currency }}
+> USD25,679,754.45
+Lógicamente esto no será válido para Europa.Fácilmente se puede pasar cualquier string en el primer argumento y lo pondrá delante:
+{{ ventasNetas | currency:'-€-' }}
+-€-25,679,754,45
+{{ ventasNetas | currency:'$$$' }} <- le puedo pasar cualquier string.
+$$$25,679,754,45
+También puedo aprovechar sus argumentos para especificar el numero de digitos positivos y decimales:
+{{ ventasNetas | currency:'USD':'symbol-narrow':'1.4-4' }} <- que tenga 4 decimales(hay que pasar el segundo argumento si o si??)
+
+En cuanto al pipe percent simplemente añade el '%' a un numero.Ojo,que por defecto no toma decimales y hace el redondeo
+{{ ganancia }}
+>48.56
+{{ ganancia | percent }}
+49% <- por defecto no pone decimales
+* NOTA: Angular siempre tratará de redondear cualquier número
+{{ ganancia | percent:'1.2-2' }}
+>48.56% <- es muy probable que trabaje con decimales,hasta 4 es lo más normal
+
+			VIDEO 146 FIELDSET PRIMENG COMPONENT
+
+El componente Fielset es un componente agrupador con la tipica content toggle feature(recoger/expandir un contenido).Aqui un enlace a la documentación oficial: https://primefaces.org/primeng/showcase/#/fieldset
+
+Si especifico col + md:col-6 cuando no sea md me cogerá las 12 columnas.Es otra forma de especificarlo:
+<div class="col md:col-6"> <- para md coges 6 y para los demas 12
+
+En cuanto al Fieldset puedo ver en la documentación que tiene un header(atributo legend) y un body para el texto.Vale la pena decir que los componentes que usan animaciones usan el propio sistema de Angular de animaciones por lo cual va a haber que importar un módulo especial
+
+Segun tengo el proyecto lo primero es importar el componente-modulo al primeNgmodule:
+
+import {FieldsetModule} from 'primeng/fieldset';
+
+Sin embargo esto no será suficiente.Si intento usar un <p-fiedset> veré este error:
+
+Error: Found the synthetic listener @fieldsetContent.done. Please include either "BrowserAnimationsModule" or "NoopAnimationsModule" in your application.
+Asi que el que vamos a añadir es el BrowserAnimationsModule,podemos hacerlo en un punto alto de la aplicación para no preocuparnos demasiado.
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+*Para que pueda encogerse el texto hay que pasarle [toggleable]="true".
+   <p-fieldset legend="encabezado" [toggleable]="true">
+
+IMPORTANTE: meter una propiedad entre corchetes enlaza el valor de una propiedad,si,pero también permite decirle a Angular que simplemente interprete el valor de esa key.Si no pusiera [toggleable]="true"  y pusiera toggeable="true" true sólo sería un string.Para que Angular interprete su valor debo poner la key entre corchetes,forzando que lo interprete.
+Creo otro mas y pongo como legend los dos pipes que vamos a ver el i18nSelect pipe y el i18nPlural pipe.Por último,para agregar el efecto de agua o 'splash' tipico de los diseños Material necesitaré inyectar el servicio PrimeNGConfig en el constructor y llamar en el ciclo de vida onInit a la propiedad ripple de esta clase y ponerla en true.Es la que se encarga de ese efecto de burbujitas:
+
+import { PrimeNGConfig } from 'primeng/api';
+
+constructor( private primeNGConfig: PrimeNGConfig) { };
+ngOnInit():void { this.primeNGConfig.ripple = true; };
+
+* Fijate que implementó el efecto en toda la aplicación y que es un efecto que debería usar casi cualquier aplicación hoy en dia.Lo usaré mucho.
+
+			VIDEO 147 PIPE i18nSelect
+
+Doc: https://angular.io/api/common/I18nSelectPipe
+El pipe i18nSelect es un selector genérico que muestra el string que haga match con el valor actual.La sintaxis es:
+{{ value_expression | i18nSelect : mapping }} 
+
+Este pipe necesita obligatoriamente de su argumento 'mapping'.Imaginemos que tengo la siguiente frase:
+
+       Saludos {{ nombre }}, es un placer invitarlo a nuestro evento. 
+
+Si nombre es masculino 'invitarlo' concuerda,pero,¿y si es una mujer?Para ello usaremos el pipe i18nSelect que mapea una propiedad con un mapa u objeto de pares de clave valor.Veamoslo en un ejemplo.Lo primero será crear ese mapa de valores:
+
+mapaValores: {
+ 'masculino':'invitarlo',
+ 'femenino':'invitarla'
+}
+Aparte he creado dos propiedades:
+nombre:string= 'Susana';
+genero:string = "femenino";
+
+ <p-fieldset legend="i18nSelect Pipe" [toggleable]="true">
+       Saludos {{ nombre }}, es un placer 
+       {{ genero | i18nSelect:invitacionObj}}
+       a nuestro evento.
+   </p-fieldset>
+
+Puedo ver que mapearé genéro de forma que si es femenino será invitarla y si es masculino invitarlo.Puede ser un pipe útil y que incluso sea obligatorio su uso
+
+			VIDEO 148 PIPE i18nPlural
+
+Doc: https://angular.io/api/common/I18nPluralPipe
+
+Este pipe mapea un valor a un string que pluraliza el valor de acuerdo a las reglas locales del host.Su sintaxis es:
+
+{{ value_expression | i18nPlural : pluralMap [ : locale ] }}
+
+Estos pipes son más útiles de lo que parece.El argumetno pluralMap que es otro mapa de valores es obligatorio para que Angular sepa mapear un valor con otro.
+
+* Por ejemplo puedo comprobar con ese mapa la longitud de posiciones 
+    <p-fieldset legend="i18nPlural Pipe" [toggleable]="!false">
+      Actualmente {{clientes.length | i18nPlural:clientesMapa}} 
+    </p-fieldset>
+
+* En la clase hay que crear el array y el mapa:
+  // i18nPlural
+  clientes: string[]= ['Maria','Pedro']
+  clientesMapa = {
+    '=0':'no tenemos ningún cliente esperando',
+    '=1':'tenemos un cliente esperando',
+    'other':'tenemos # clientes esperando',
+}
+Angular espera las keyword 'other' y el # para inferir el valor que está a la izquierda(el clientes.length) 
+Usar este tipo de pipes da a la aplicación un acabado profundo hablando bien del que la hizo.
+
+			VIDEO 149 TAREA SOBRE i18nPipes y PrimeNg 
+
+1- Colocar un botón debajo de cada fieldset.Hacerlo bonito con PrimeNG
+2- Crear eventos que cambien de persona y eliminen un cliente
+
+      <button
+      pButton pRipple
+      type="button"
+      label="Añadir un cliente"
+      (click)="agregarCliente()"
+      icon="pi pi-users"
+      class="p-button-info p-button-raised p-button-rounded"
+      >
+      <p-badge value="Click here"></p-badge>
+    </button>
+
+NOTAS: necesito usar pRipple ( e importar su modulo al proyecto) para recuperar el efecto splash.Puedo usar clases para elevarlo o redondearlo.Puedo usar badges.Parece una gran librería de diseño PrimeNG.
+
+			VIDEO 150 SLICE PIPE
+
+Doc: https://angular.io/api/common/SlicePipe
+
+El Pipe slice crea un nuevo Array o String conteniendo un subset de array o string original.Es decir,que lo recorta.Su sintaxis es:
+
+{{ value_expression | slice : start [ : end ] }}
+La expresión puede ser un string o un arregl,despues va el caracter de tuberia seguido de la palabra slice y el argumento start que es obligatorio.El final es opcional.

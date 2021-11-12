@@ -1,0 +1,85 @@
+						SECCION 20 CICLOS DE VIDA EN ANGULAR
+
+Documentación: https://angular.io/guide/lifecycle-hooks
+
+Entre los métodos que más se usan son el ngOnChanges,el ngOnInit,el ngOnDestroy
+Un Hook es algo que nos permite a nosotros ejecutar una función o método cuando suceda ese ciclo de vida de Angular.
+
+La etiqueta <base> permite especificar una URL por defecto y un target por defecto en un documento HTML.
+Sólo puede haber una y deberá llevar especificado o el atributo href o el atributo target, o ambos,pero no puede ir vacía.
+Además de ser única debe ir en el <head> del documento.
+
+IMPORTANTE: todas las interfaces se llamarán OnInit,OnChanges,...( sin el 'ng') y vienen de @angular/core.
+
+* Éste es el resultado en orden de todos los lifecycle hooks de Angular al crear un componente:
+constructor
+ ngOnInit
+ ngDoCheck
+ ngAfterContentInit
+ ngAfterContentChecked
+ ngAfterViewInit
+ ngAfterViewChecked
+ ngDoCheck
+ ngAfterContentChecked
+ ngAfterViewChecked
+*Puedo ver que ni el ngOnDestroy ni el ngOnChanges se llamaron,claro está,ya que ni se ha destruido ni ha habido cambios
+
+					VIDEO 295 CICLOS DE VIDA UNO POR UNO
+
+* De la documentación oficial:
+
+1º: ngOnChanges: responde cuando Angular setea o resetea inputs de data(los @Input) de un padre al hijo.El método recibe un argumento SimpleChanges con los valores anteriores y actuales(antes y despues del cambio)
+Fijate que este ciclo sucede muchas veces,asi que cualquier operación que realices aquí tendrá impacto en la performance.
+Es llamado incluso antes del ngOnInit cuando suceda un cambio en las data-bound input properties que tenga enlazadas.
+
+2º: ngOnDestroy: es llamado justo despues de que el componente haya sido destruido.Es muy útil para hacer limpieza de Observables.
+
+3ª: ngDoCheck: detecta y actua sobre cambios que Angular no puede o no detectará por su cuenta
+4º: ngAfterContentChecked: se dispara después de que Angular chequee el contenido proyectado en una directiva(despues de un cambio)
+5: ngAfterViewChecked: igual que el anterior pero para las templates,la UI.
+
+3-4-5ª: ngDoCheck,ngAfterContentChecked y ngAfterViewChecked se disparan cuando suceda un cambios del ciclo de deteccion de vida(primero hace el doCheck,despues verifica el contenido y despues verifica la UI con el ngAfterViewChecked
+
+<button (click)="guardar()">Click  </button> <- un simple click disparará estos tres ciclos
+* También enlazar una propiedad con ngModel:     [(ngModel)]="nombre" <- muchas cosas dispararán el ciclo de deteccion de cambios
+
+*El ciclo de detección de cambios se dispara con casi cualquier interacción con un componente(entrar a un simple input con un ngModel lo disparará,o insertar un simple carácter,enlazar una propiedad de la clase a la template,...)
+
+				VIDEO 296 NGONCHANGES
+
+Recuerda que el OnChanges no se va a disparar mientras no tenga inputs que vengan del padre(con @Input).Fijate que no se refiere a simples etiquetas inputs.
+Si creo un componente que reciba data del padre y le envio algo:
+* En el componente le declaro la prop a recibir:
+  @Input() nombre!: string;
+
+* Desde el padre se la envio
+<app-muestra-nombre [nombre]="nombre"></app-muestra-nombre>
+* Esto siempre disparará el onChanges dado que el valor de la directiva @Input cambió.
+
+					VIDEO 297 NGONDESTROY
+
+Vamos a usar un simple temporizador:
+<h1>Segundos: {{ segundos }}</h1>
+
+Podemos usar el operador rxjs 'interval' el cual es un Observable que se resuelve en el tiempo que le especifiquemos por argumento:
+
+ngOnInit() {
+  interval(1000).subscribe( i => this.segundos = i) ); <- ya tenemos nuestro segundero
+
+Esto disparará varios ciclos de vida pero realmente Angular es muy eficiente asi que no debe importarme(supongo que con React igual).
+* Sin embargo ,para propósitos didácticos, podemos ocultar y mostrar el componente(creando otro observable),llegará un punto en que será importante dessubscribirse de este Observable.
+Si bien no hemos visto como cancelar una subscripcion(todo subscribe regresa una Subscription) podemos realizarlo asi:
+
+timerSubscription! : Subscription; <- viene de rxjs
+
+ngOnInit() {
+ this.timerSubscription = interval(1000).subscribe( i => this.segundos = i );
+* En el destroy la cancelamos:
+ngOnDestroy() {
+  this.timerSubscription.unsubscribe();
+
+Ciertas subscripciones como Firebase,sockets o este operador rxjs son bastante ruidosas y pueden impactar en la performance.
+
+					SECCION 21 MAPAS EN ANGULAR
+
+

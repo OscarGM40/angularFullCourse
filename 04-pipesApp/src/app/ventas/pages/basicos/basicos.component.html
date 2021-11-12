@@ -1,0 +1,80 @@
+<div class="text-layout">
+   <h1>Pipes Básicos Uppercase & Lowercase & Titlecase</h1>
+   <p>
+      Pipes incluidos en el CommonsModule - Usados para pequeños retoques visuales de strings
+   </p>
+</div>
+
+<div class="grid justify-content-center">
+   
+   <div class="lg:col-4 md:col-6 sm:col-12">
+      <p-card 
+        header="uppercase pipe"
+        [subheader]="nombreLower">
+           {{ nombreLower | uppercase}}
+      </p-card>
+   </div>
+
+   <div class="lg:col-4 md:col-6 sm:col-12">
+      <p-card
+      header="lowercase pipe"
+      [subheader]="nombreUpper | lowercase"
+      >
+      {{ nombreUpper | lowercase}}
+   </p-card>
+   </div>
+
+   <div class="lg:col-4 md:col-6 sm:col-12">
+      <p-card
+      header="titlecase pipe"
+      [subheader]="nombreCompleto | titlecase"
+      >{{ nombreCompleto | titlecase}}</p-card>
+   </div>
+
+</div>
+
+<div class="text-layout">
+   <h1>Pipe Date para Fechas</h1>
+   <p>
+      Pipes incluido en el módulo CommonsModule de Angular - Se usa para manejar fechas con el formato deseado
+   </p>
+</div>
+
+<div class="grid">
+   <div class="sm:col-12 md:col-6">
+      <p-card  >
+         <ul>
+            <li>fecha</li>
+            <li>fecha | date</li>
+            <li>fecha | date:'sort'</li>
+            <li>fecha | date:'long'</li>
+            <li>fecha | date:'custom'</li>
+         </ul>
+         <hr>
+         <ul>
+            <li>Hora en Argentina | GMT-6</li>
+            <li>Hora en Brasil | GMT-4</li>
+            <li>Hora local</li>
+         </ul>
+      </p-card>
+   </div>
+   <div class="md:col-6 sm:col-12">
+      <p-card>
+         <ul>
+            <li>{{fecha  }}</li>
+            <li>{{fecha | date }}</li>
+            <li>{{fecha | date:'short' }}</li>
+            <li>{{fecha | date:'long' }}</li>
+            <li>{{fecha | date:'y dd(EEEE) of MMMM G H:m:s a' }}</li>
+         </ul>
+         <hr>
+         <ul>
+            <li>{{ fecha | date:'long':'GMT-6'}}</li>
+            <li>{{ fecha | date:'long':'GMT-4'}}</li>
+            <li>{{ fecha | date:'long':''}}</li>
+            <li>{{ fecha | date:'long':'':'en'}}</li>
+            <li>{{ fecha | date:'long':'':'fr'}}</li>
+         </ul>
+      </p-card>
+      </div>
+</div>

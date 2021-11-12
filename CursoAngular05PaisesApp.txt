@@ -1,0 +1,638 @@
+				SECCIONES 8 Y 9 APP DE PAISES
+
+Haremos una aplicación que también va a usar una API para geolocalizar paises,asi como sus fronteras.
+Esta aplicación será una SPA,en la cual incorporaremos Routing.Las páginas o rutas en Angular en realidad no son más que otros componentes.
+Normalmente se crea un directorio 'pages' para diferenciar que ese componente es una página
+
+¿Qué veremos en esta sección?
+
+1- Rutas
+2- RouterLink y RouterLinkActive
+3- Componentes especializados
+4- DebounceTime
+5- Inputs
+6- SwitchMaps
+7- Consumo de APIs
+8- Tipado de datos
+9- Menú de aplicación
+
+Y más
+En esta sección daremos los fundamentos de una aplicación SPA (Single Page Application), y luego, las seguiremos haciendo pero mediante carga perezosa (lazyload), esta es otra aplicación real que nos enseñara mucho de cómo funciona Angular y como la información fluye en ella.
+
+							VIDEO 95 INICIO DEL PROYECTO
+
+Creo un nuevo proyecto con <ng new projectName> y de momento crearemos una vez las rutas manualmente.
+Fernando provee un enlace a https://restcountries.eu/. Alli veré una API con diferentes endpoints para obtener paises por lenguajes,capitales,fronteras...
+Nosotros usaremos tres,por capital,por región.Como pequeña práctica cogo un enpoint cualquiera como por ejemplo por region y creo una nueva peticion en Postman con el enpoint para buscar pais por nombre(https://restcountries.eu/rest/v2/name/united) .Me aseguro que funciona y la guardo con CTRL + s(creo una coleccion también,además de la request.
+Además la marco con la estrellita de favorita para que se ponga la primera y la pueda ver rápidamente.
+Más adelante trabajaremos con el endpoint de capitales y regiones.
+Renombro la carpeta a 03-paisesApp y uso <ng s -o>.También la abro con VSC
+
+			VIDEO 96 ESTRUCTURA DE CARPETAS Y EXPLICACIÓN DE LA MISMA
+
+Lo primero es importar la CDN para el bootstrap.Usar una CDN es un estandar ya que muchas personas lo tendrán en la caché y la carga será inmediata por el navegador.Si lo instalaramos como dependencia como parte del bundle que nosotros creamos puede incrementar el tamaño sin necesidad.Volvamos a la estructura del proyecto.
+
+1- Recuerda que debo trabajar en base a módulos,asi que vamos a crear dos.El primero va a ser el folder 'shared'.Aqui tendremos componentes reutilizables a lo largo de la aplicación(un navbar,un sidebar,un footer o cualquier otra cosa reutilizable).Creo una subcarpeta de 'shared' llamada sidebar pues tendremos una sidebar reutilizable.
+
+2- Creo otro folder en la raiz del proyecto.Lo llamo pais(o paises).Esto va a tener todo lo relacionado a paises.Creo un subdirectorio 'components',otro interfaces,otro pages,otro services.Esto es un estandar con módulos relativamente grandes,el crear 4 subdirectorios por módulo
+
+modulo
+    _| <- components
+    _| <- pages
+    _| <- interfaces
+    _| <- services
+
+Un modulo podria ser compras o clientes,etc.En estos subdirectorios tendré los componentes de un pais,las páginas de un pais,sus servicios,sus interfaces.Las páginas se les pone ese nombre para indicar que es UN CONTENEDOR PRINCIPAL,ES DECIR UN COMPONENTE QUE ENGLOBA A OTROS.
+
+					VIDEO 97 CREANDO LOS MODULOS Y LOS COMPONENTES  
+
+Creo el modulo de pais o paises,pues hemos decidido que es un módulo.Debo recordar que los módulos no son importados en ningun lugar,asi que debo hacerlo yo en el app.module.
+>ng c m pais
+Hago lo mismo para el shared
+>ng c m shared
+
+Estos son los dos únicos módulos que vamos a crear asi que vamos por los componentes.Empezamos por el sidebar,y lo creo sin archivos de test ni de estilos:
+>ng g c shared/sidebar --skip-tests -is
+Vamos por las páginas,recuerda que son simples componentes(aunque son el main component).
+>ng g c pais/pages/porCapital --skip-tests -is
+
+Creo otras dos páginas/componentes para la region,el pais y ver un Pais.
+>ng g c pais/pages/porRegion --skip-tests -is
+>ng g c pais/pages/porPais --skip-tests -is
+>ng g c pais/pages/verPais --skip-tests -is
+
+Tengo que pensar que componentes van a salir de su módulo,fijate que los que estén en shared son candidatos,pues está en su naturaleza.Asi que voy a l archivo del modulo y en el decorador,en la propiedad exports los exporto al resto de la aplicación.
+Los componentes del modulo pais realmente tambien los voy a necesitar fuera de él,asi que también los exporto.
+Finalmente importo los módulos secundarios en el módulo principal.
+
+				VIDEO 98 ESTRUCTURA HTML DE LA APP
+
+ De momento creamos algo superbásico(fijate en el uso de col-3 y col-9 como clases:
+
+<div class="row container mt-4">
+
+  <div class="col-3">
+    <h2>Busquedas</h2>
+    <hr>
+    <ul class="list-group">
+      <li class="list-group-item">Buscar país</li>
+      <li class="list-group-item">Buscar por región</li>
+      <li class="list-group-item">Buscar por capital</li>
+    </ul>
+  </div>
+
+  <div class="col-9">
+    <h2>Por Capital</h2>
+    <hr>
+    <app-por-capital></app-por-capital>
+  </div>
+
+</div>
+
+De alguna manera queremos que el div de 9 columnas muestre su contenido de forma dinámica,en base a rutas.
+
+							VIDEO 99 ROUTERMODULE 
+
+Las rutas principales son las rutas que una aplicación puede tener.Las rutas hijas son las subrutas que una ruta puede tener.
+
+Ya veremos esto en profundidad,de momento creamos el archivo app-routing.module.ts COLGANDO de app.Fijate también que es un módulo común y corriente,asi que tendrá la clase que exporto como todas y el decorador NgModule pues es un módulo:
+
+* Paso 1
+import { NgModule} from '@angular/core';
+
+NgModule({
+  imports:[],
+  exports:[],
+})
+export class AppRouting { } 
+
+* Fijate que es un módulo común y corriente,pero que es lo que tenemos que importar y exportar?Es aqui donde cambia de un módulo común.Lo primero es crear el arreglo de rutas(cons routes: Routes = []).Fijate que Routes es un arreglo de objetos realmente,y que la librería @angular/router es parte del framework.
+
+En cada objeto del arreglo puedo usar muchas propiedades y métodos,de momento nos valdrá con path para indicar el path y component para indicar que componente mostrar en esa ruta.Tambien usaremos RedirectTo y pathMatch para indicar el módo de hacer match(por defecto está en prefix,con full debe coincidir plenamente
+Para crear rutas dinámicas le paso /:id como argumento.
+
+IMPORTANTE:fijate que la propiedad path no será /capital sino únicamente 'capital'.También se debe crear una ruta para los 404 con un RedirectTo al home,aunque en proyectos serios se suele crear un 404Component en vez de redireccionar.
+
+import { NgModule} from '@angular/core';
+import { Routes } from '@angular/router';
+
+* 
+const routes: Router = [{
+ 				path:'',
+				component: PorPaisComponent,
+				pathMatch:'full' 
+			},{
+   			path:'capital'
+				component: PorCapitalComponent
+      },{
+				path:'region',
+			  component:'porRegionComponent
+      },{
+				path:'pais/:id'   <- RUTA DINÁMICA
+				component: 'VerPaisComponent'
+       },{
+        path:'**',
+				RedirectTo:''
+       }
+]
+NgModule({
+  imports:[
+   RouterModule.forRoot( routes )
+],
+  exports:[ 
+   RouterModule
+
+],
+})
+export class AppRoutingModule { } 
+
+* IMPORTANTE: declarar sólo el array de Routes no hace nada,debo pasarle esa constante como argumento al método estático forRoot o forChild de la clase RouterModule.Esto es lo que hace implementar estas rutas realmente a Angular.Adicionalmente,hay que llamar a esté modulo en el módulo main,ya que de momento es un simple módulo flotando.
+Todo esto hará implementar el sistema de rutas en Angular
+
+									DIRECTIVA ROUTER-OUTLET
+
+RouterModule nos provee de la directiva/selector <router-outlet></router-outlet>. En el lugar donde implemente este selector inferiré el sistema de rutas.renderizando los componentes en base a la URL
+
+								VIDEO 100 ROUTER LINK
+
+Es momento de que la <ul> con sus <li> pueda redireccionar.Si bien pudiera parecer que podria usar un simple anchor <a href="/capital"> esto es un error ya que hará un full-refresh.
+Es obvio que hay que usar el enrutador de Angular.Este RouterModule nos provee con el atributo routerLink="" para poder usarlo en la template.El string de nuevo no lleva slashes(routerLink="capital")
+
+Esta propiedad siempre va acompañada de otra,routerLinkActive="CSSClass" que permite pasarle una clase(y varias¿?) para cuando la ruta esté activa.
+
+Aun tendré un problema ya que la ruta raiz hará match siempre y estará activa.Hay que pasarle la propiedad [routerLinkActiveOptions]="{exact: true}" con un objeto por argumento con el boleano 'exact' en true:
+
+<li routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+<li routerLink="capital" routerLinkActive="active">
+<li routerLink="region" routerLinkActive="active">
+
+En la proxima clase vamos a mover este componente sidebar del app.component al componente que ya hemos creado para el
+
+						VIDEO 101 COMPONENTE SIDEBAR
+
+Al tratar de hacer la tarea de copiar el código html de una template a otra veré que no tengo acceso a la librería RouterModule.Esto es porque los módulos son como pequeñas burbujas encapsuladas.
+La única forma de acceder a las propiedades routerLink,routerLInkActive,[routerLinkActiveOptions] es importar el módulo que lo ofrece(la clase AppRoutingModule) o el propio módulo donde están definidas(RouterModule)
+Angular es sumamente inteligente y al ver que un módulo lo exporta lo cargará en memoria asi que cuando lo quiera importar en el shared.module lo importaré de la caché,simplemente lo reutiliza,no hay penalidad alguna
+También puedo importar todo el archivo pero date cuenta que es más correcto importar sólo el RouterModule.
+
+				VIDEO 102 COMPONENTE PARA BUSCAR POR PAIS
+
+Voy a crear un input para rescatar la información del usuario.Aunque sea sólo un input vamos a usar el módulo FormsModule para poder usar la propiedad [(ngModule)] y hacer un doble enlace,y también poder usar el método (ngSubmit) en el formulario.En cuanto quiera trabajar con formularios debo usar el FormsModule importandolo.
+Asi que voy al módulo pais.module.ts e importo el módulo perteneciente al framework. 
+Recuerda que [()] representa el two-way data-binding ya que ()enlaza eventos y [] enlaza propiedades en Angular
+
+
+* En la clase
+this.termino:string=""
+
+buscar(){
+ console.log(this.termino)
+}
+
+*en el html
+<form (ngSubmit)="buscar()"
+<input type="" name="termino" [(ngModel)]="termino" placeholder...>
+Recuerda que debe llevar el name para inferir el valor desde la propiedad de la clase
+Como se puede ver enlazar formularios es muy sencillo en Angular
+
+			VIDEO 103 SERVICIO PARA BUSCAR PAISES
+
+Vamos a crear nuestro servicio para realizar las peticiones a la API restcountries.eu.
+Recuerda que de momento sólo habiamos creado la carpeta services asi que hay que crearlo por consola:
+>ng g s pais/services/pais --skip-tests
+Recuerda que los servicios por defecto están elevados hasta el root de la aplicación y que son injectables en toda la app.
+
+Como vamos a realizar peticiones importamos el HttpClientModule.Usualmente se importa en el módulo principal,FIJATE QUE NO AYUDA EL AUTOCOMPLETADO Y QUE VIENE DE COMMON/CLIENT:
+import { HttpClientModule } from '@angular/common/http';
+*Ya puedo injectar su clase HttpClient en el servicio 
+
+constructor ( private http: HttpClient) {}
+*Creo la funcion para buscar pais
+buscar pais ( termino: string ): Observable<any> {
+  const url=`${this.apiUrl}/name/${termino}`;
+  return this.http.get( url );
+}
+NOTA: this.http.get() devuelve un Observable<T>(de momento le ponemos any pero sera un array de paises.Cuando hago un this.http.get().subscribe() y me subscribo si devuelve la data(una Response) pero puedo devolver el Observable para consumirlo en otro lado.Esto es Angular,chaval.
+
+NOTA:para que un Observable se dispare por lo menos tengo que llamar al subscribe,es decir,tengo que estar suscrito o subscribirme a un Observable.Con todo esto en mente me subscribo en el método buscar despues de injectar el servicio con el método que devuelve el Observable:
+
+buscar() {
+ this.paisService.buscarPais(this.termino).subscribe(resp=> console.log(resp)} <- de momento un simple console.log
+
+En el siguiente video empezaremos a capturar errores.
+
+				INTRODUCCION A LOS OBSERVABLES
+
+Los observables son una de las principales herramientas para programar aplicaciones de mayor rendimiento.Este es el motivo por el que se introdujeron en Angular 2.
+En Angular somos capaces de usar un almacén de datos,y cuando se modifica ese almacén,recibir automáticamente esos cambios,sin que tengamos que programar a mano ese tránsito de la información.Angular se convirtió en un framework muy usado por su capacidad de proporcionar esta actualización automática de las fuentes de información.
+Aunque Angular nos ahorra escribir mucho código,esto tiene un coste en términos de rendimiento.El trabajo que Angular hace por debajo para proporcionar automáticamente estos cambios se deja notar en aplicaciones medianas y grandes especialmente:
+
+NOTA: Para ser más concreto, Angular por debajo hace una serie de operaciones de manera repetitiva, en las que consulta los cambios en la fuente de datos, para saber cuándo se actualizan y entonces realizar las acciones oportunas para refrescar los datos en los lugares donde se están usando. Esa no era la mejor estrategia posible y por este motivo, otras librerías como ReactJS, que supieron implementar un patrón de comportamiento más acertado, capaz de ofrecer mayor rendimiento, comenzaron a ganar su espacio ante la hegemonía de Angular.
+
+La solución a este problema fue usar el patrón Observable que básicamente nos ahorra tener que hacer consultas repetitivas de acceso a la fuente de información,con lo que aumenta el rendimiento de las aplicaciones
+
+			PROGRAMACION REACTIVA
+
+Para facilitar el cambio de comportamiento entre la programación imperativa y la programación reactiva,en ésta última se usan intensivamente los flujos de datos.LA PROGRAMACIÓN REACTIVA ES LA PROGRAMACIÓN CON FLUJOS DE DATOS ASÍNCRONOS.
+En programación reactiva se pueden crear flujos(streams) a partir de cualquier cosa,como podría ser los valores que una variable tome a lo largo del tiempo.
+Todo puede ser un flujo de datos,como los clicks sobre un botón,cambios en una estructura de datos,una consulta REST,un fed RSS...
+En la programación reactiva se tienen muy en cuenta esos flujos de datos,creando sistemas que son capaces de consumirlos de distintos modos,fijandose en lo que realmente les importa de estos streams y desechando lo que no importa.Para ello se dispone de diversas herramientas que permiten filtrar los streams,combinarlos,crear streams a partir de otros,etc.
+La programación reactiva se ocupa de lanzar diversos tipos de eventos sobre los flujos:
+1- La aparición de algo interesante dentro de ese flujo
+2- L aparición de un error en el flujo o stream
+3- La finalización del stream
+
+Como programador,mediante código,puedo especificar qué es lo que debe ocurrir cuando cualquiera de esos eventos se produzca.
+
+			OBSERVABLES Y PROGRAMACIÓN REACTIVA
+
+El patrón observable básicamente pone en funcionamiento diversos actores para producir los efectos deseados(producir eventos y consumirlos)
+Los componentes principales de este patrón son:
+1- OBSERVABLE: es aquello que queremos observar,que será implementado mediante una colección de eventos o valores futuros.Un observable puede ser creado a partir de ventos de usuario derivados del uso de un formulario(mandar el formulario,hacer click,entrar a un cuadro de texto en concreto...), a partir de una llamada HTTP, consultar un almacén de datos...
+Mediante observables nos podemos suscirbir a eventos custom que nos permiten realizar cosas cuando cambie lo que se esté observando.
+
+2-OBSERVER: es el actor que se dedica a observar.Básicamente se implementa mediante una colección de funciones callback que nos permiten escuchar los eventos  o valores emitidos por un observable.
+
+3-SUBJECT: es el emisor de eventos,que es capaz de crear el flujo de eventos cuando el observable sufre cambios.Esos eventos serán los que se consuman en los observers.
+La libreria RxJS es la que se usa en Angular y React para implementar este patrón.
+
+				RxJS
+
+ReactiveExtensions es una librería hecha por Microsoft para implementar programación reactiva.Por su parte RxJs es la implementación en Javascript de la librería ReactiveExtensions.
+Al ser Javascript la puedo usar en cualquier proyecto JS(React,Vue,Vanilla JS o Angular...)
+
+				VIDEO 104 MANEJO DE ERRORES
+
+Si mandamos el principio de un pais(como españ) tendremos una respuesta 200.Si no hay nada que coincida con el termino mandado tendremos un 404(no es un error,ojo,es un NotFound).
+Es una petición exitosa que fue al backend y el backend respondió con un 404
+Hay varias formas de manejar este error,una sería al mandar la petición que devuelve un Observable y otra forma sería al consumirlo suscribiendonos.
+Con la primera forma podriamos mutar la respuesta y que regrese un arreglo vacío,puede que nos interese en otra aplicación,pero veamos el métod subscribe detenidamente:
+
+(method) Observable<any>.subscribe(next?: ((value: any) => void) | undefined, error?: ((error: any) => void) | undefined, complete?: (() => void) | undefined): Subscription (+4 overloads)
+
+Si me fijo veré Observable<T>.subscribe(next?,error?,complete?).Los tres argumentos son opcionales,en el next estará la respuesta,en el error el error y en complete es la zona callback al terminar:
+
+  buscar() {
+    this.paisService.buscarPais(this.termino)
+    .subscribe(
+       ( resp: any ) => {console.log(resp)},
+       (error:any ) => {console.info(error)}
+       );
+
+* Con un simple boleano ya podemos mostrar condicionalmente el div:
+<hr>
+<div *ngIf="hayError" class="alert alert-danger">
+   No se encontró nada con el término {{ termino }}
+</div>
+* En la clase creo la propiedad hayError y lo pongo a true si entro al segundo argumento y en false al principio de la llamada al método buscar()
+
+La otra forma,que era mutando la respuesta con el método pipe en el que puedo usar cualquier operador RxJs.Los operadores no son más que unas funciones que se van a ejecutar en base al resultado de la petición
+
+1- catchError()=funcion/operador RxJs que se dispara cuando el resultado es un error
+2- of()=genera Observables ,transforma en un nuevo Observable sus argumentos.Ejemplo:
+
+return this.http.get( url )
+  .pipe(
+    catchError( err => of( [] ) ));
+En cuanto haga esto ya no llegará al segundo argumento del subscribe(next,error,complete).De momento seguiremos con esta segunda forma yla propiedad boleana.
+Por último también queremos que no sea vea la tabla si hay un error:
+<div *ngIf="!hayError" class="row"> <- fijate en la negación.
+
+			VIDEO 105 TIPADO DE LAS PETICIONES
+
+Cuando trabaje con peticiones HTTP siempre es bueno ponerles el tipo.Es importante entender que :
+buscarPais( termino: string): Observable<T>(...)
+esto no crea una instancia de la clase T,es solo información para Typescript.
+
+Vamos a usar quicktype.io para tipar la petición asi que llevo una respuesta exitosa a esa web y me traigo la interfaz.Vamos a cambiar el nombre de ella,ya que se supone que es un pais:
+export interface Country { ...
+
+Con todo esto ya puedo tipar la petición,pero ojo que la Response retorna un arreglo de paises luego será Observable<Country[]>
+La llamada al get me dará error asi que también la pongo el tipo.
+
+			VIDEO 106 LLENAR LA TABLA DE PAISES
+
+Me creo una nueva propiedad que será un arreglo de Countries,la cual llenaré con valores en el subscribe.Ya puedo iterar en la tabla sobre las propiedades que quiera:
+      <tbody *ngIf="paises.length > 0">
+         <tr *ngFor="let pais of paises;let i=index">
+           <td>{{i+1}}</td>
+           <td>
+             <img [src]="pais.flag" class="small-flag" alt="">
+           </td>
+           <td>{{ pais.name }}</td>
+           <td>{{ pais.population | number}}</td>
+           <td>
+              <a [routerLink]="['/pais','pais.alpha2Code']">Ver más</a>
+           </td>
+         </tr>
+      </tbody>
+* Fijate en el nuevo uso de 'routerLink',módulo que deberé importar.La sintaxis es [routerLink]="['arg1','arg2','arg3']".Con esta sintaxis puedo crear rutas.
+NOTA: routerLink tiene más funcionalidades,como poder mandarle queryParams:
+
+<a [routerLink]="['/user/bob']" [queryParams]="{debug: true}" fragment="education">
+  link to user component
+</a>
+
+				VIDEO 107 COMPONENTES INPUT Y TABLA
+
+Yo necesito la misma funcionalidad de la tabla en el componente porRegion y porCapital.Inclusive necesitamos el input,al cual añadiremos el DebounceTime(que emita el valor conforme la persona deja de escribir por un determinado tiempo)
+Nosotros tenemos ya la carpeta components,asi que como tarea creo un componente pais-tabla.component.ts en pais/component.El HTML es la tabla,y tendré que pasar mediante @Input los paises(@Input paises: Country[]=[].
+NOTA:para pasarla al padre era:
+<app-pais-tabla [paises]="paises" donde el primer pais es el nombre en el hijo,y el segundo el valor del padre a transmitir
+
+			VIDEO 108 COMPONENTE INPUT REFACTORIZADO
+
+Este componente es un poco más complejo.Va a necesitar dos propiedades y un evento custom en el que mandaremos el termino a buscar y al conjunto con @Output.
+Lo primero es crear el componente nuevo:
+>ng g c pais/components/input-tabla -is
+Ahora  me creo las dos propiedades:
+
+*Recuerda que EventEmitter viene del core:
+import {EventEmitter} from '@angular/core';
+@Component({selector:'',templateUrl:''})
+export class InputTablaComponent {
+  @Output() onEnter:EventEmitter<string>=new EventEmitter();
+  termino: string="";
+
+  buscar(
+    this.onEnter.emit( this.termino)
+  )
+* Este método buscar es diferente al del padre.Se refiere a este componente y ambos pueden llamarse diferente(de echo lo haré asi)
+En el selector debo rescatar este evento custom:
+<app-input (onEnter)="buscar( $event )">
+* Este buscar es el del padre y fijate que necesito '$event' y que tendré en él el string que mandó el hijo.
+
+			VIDEO 109 DEBOUNCE TIME EN EL INPUT
+
+Aprender el DebounceTime es algo sumamente importante en cualquier búsqueda,especialmente si la búsqueda va a consumir un servicio REST.
+En el caso de que se disparen busquedas cada vez que el usuario escriba un nuevo caracter si se aconseja un DebounceTime por motivos de rendimiento y experiencia de usuario.
+
+Rx(Reactive Extensions) viene con un Observable especial llamado el Subject.El Subject(es una clase) permite crear un Observable manualmente.Viene de la libreria 'rxjs'.Veamos la autoayuda:
+
+* A Subject is a special type of Observable that allows values to be multicasted to many Observers. Subjects are like EventEmitters.
+*Un Subject es un tipo especial de Observable(también es un Observer) que me permite trasmitir valores a múltipes Observers.Es como un EventEmitter o un emisor de eventos.
+
+Every Subject is an Observable and an Observer. You can subscribe to a Subject, and you can call next to feed values as well as error and complete.
+* Fijate que me puedo subscribir al él y que tendré los tres argumentos(next,error,complete)
+
+@Output() onDebounce: EventEmitter<string>=new EventEmitter();
+
+*Para crear un Subject es tán fácil como:
+import { Subject } from 'rxjs';
+
+debouncer: Subject<T>= new Subject(); <- ya me puedo subscribir
+
+* Sin embargo si me subscribo ahora no tengo ningun valor en el next.La idea del debouncer es que se emita cuando yo dejo de escribir y para hacer eso tendremos que implementar un par de métodos,entre ellos el ciclo de vida onInit(interfaz que viene de angular/core y obliga a implementar su método abstracto ngOnInit <- fijate que el nombre de la interfaz es una cosa y sus métodos abstractos otra)
+Vale la pena decir que esté método se dispara una única vez,y es cuando el componente es creado la primera vez(va inmediatamente detrás de crear la instancia,asi que el constructor va antes).
+
+ngOnInit(){
+  this.debouncer.subscribe(valor=>console.log(valor))
+}
+* Bien,me he suscrito a algo en el onInit,pero aún me falta saber quien es ese algo,y va a ser el evento Javascript onInput de los HTMLInputElement,asi que voy al <input> y en ese evento llamo a la funcion 'teclaPresionada( $event )'y lógicamente le mando el evento.
+NOTA: en el this.termino también tengo ese valor:
+
+teclaPresionada( event:any) {
+ const valor=event.target.value;
+ this.debouncer.next(valor)
+}
+* Fijate que yo debo alimentar los valores con el método next() y despues los consumo con subscribe(next) en otro momento o lugar.
+Como ya he usado un [(ngModel)] tengo en la propiedad de la clase el valor,asi que queda a discreción si quiero usar el argumento $event.
+
+*Como ya tenemos todo en un Observable puedo usar operadores RxJS.En este caso vamos a usar el operador  rxjs debounceTime y lo vamos a hacer antes de subscribirnos,en el método especial Obervable.pipe() que me permite transformar la salida.Los operadores vienen de 'rxjs/operators'.
+
+import { debounceTime } from 'rxjs/operators';
+
+ngOnInit(){
+  this.debouncer
+    .pipe( debounceTime(500))
+    .subscribe( valor => {
+      this.onDebounce.emit(valor)
+    })
+}
+* ya tenemos el método onDebounce completado,el cual simplemente retrasará 500ms la salida del valor del onInput en la caja de texto.Lo implemento hacia el padre,que es el que lo necesita:
+<app-pais-input
+(onEnter)="buscar( $event)"
+(onDebounce)="sugerencias($event)">
+
+* Creamos el método en la clase padre:
+
+sugerencias( termino: string){
+  this.hayError=false;
+  // TODO
+}
+
+			VIDEO 110 COMPONENTE POR CAPITAL
+
+Vamos a realizar la tarea nosotros.La template nos vale la misma,sólo hay que cambiar el método a llamar desde el servicio.Habrá que crear un nuevo método en el mismo que haga peticiones por capital.
+En cuanto al placeholder hay varias formas de hacerlo,pero de momento lo haremos de forma sencilla.Cada componente manda en el selector una propiedad nueva  con un valor en duro (<app-selector placeholder="valor).Esto creará la propiedad dada,ya solo falta recibirla con un @Input placeholder y en la template usar esta nueva propiedad [placeholder]="placeholder".El valor será inferido desde los padres.La prop <app-selector prop será el valor en el hijo.
+
+			VIDEO 111 COMPONENTE VER PAIS INDIVIDUALMENTE
+
+Obtener los datos de la URL es sencillo pero vamos a realizarlo con Observables,ya que así sabremos si cambia la URL 
+
+En definitiva,nos queremos subscribir a cualquier cambio del URL.¿Como hacemos esto?En el ciclo de vida del ngOnInit es un buen lugar para subscribirnos,aunque antes tenemos que inyectar una clase en el constructor:
+constructor( private activatedRoute: ActivatedRoute) { }
+*La clase ActivatedRoute(que viene de @angular/router) viene con todo lo necesario para poder subscribirnos a cambios en la URL
+
+* la clase viene con muchos métodos pre-built de tipo Observable a los que me puedo subscribir.
+ngOnInit(){
+ this.activatedRoute.params.subscribe( v => console.log(v))
+}
+Si ahora escribo http://localhost:4200/pais/gg en la url me responderá con {id:gg}.Sabe que es un id porque definimos la ruta como 'pais/:id'
+
+Sabiendo que me devuelve un objeto podria desestructurar params o hacer un console.log(v.id).No es importante esto.Pero tenemos que crear el método en el servicio que haga la petición por id(que es el alpha2Code).
+
+buscarPorCode(id:string):Observable<Country>{
+ const url = `${this.apiUrl}/alpha/${id}`;
+ return this.http.get<Country>( url);
+}
+* Esta vez será solo un pais el retorno,ojo.
+
+   ngOnInit(): void {
+    this.activatedRoute.params
+      .subscribe((params) => {
+        console.log(params.id);
+
+        this.paisService.buscarPorCode(params.id)
+          .subscribe(pais => {
+            console.log(pais)
+          },err => {
+            console.info(err);
+          });
+
+      }
+    )
+  }
+}
+Si bien esto está totalmente funcional Angular provee un operador RxJs para no tener que embeber un subscribe dentro de otro.
+
+				VIDEO 112 RXJS SWITCH MAP
+
+Queremos reducir ese montón de código en un par de líneas.Para ello vamos a usar el operador switchMap.Es uno de los operadores de transformación mas interesantes que existen en Rx.PERMITE RECIBIR UN OBSERVABLE Y REGRESAR OTRO OBSERVABLE DIFERENTE.
+
+* En el método pipe() puedo usar cuantos operadores RxJS quiera
+
+  this.activatedRoute.params
+    .pipe (
+       switchmap(params => ObservableInput)
+     )
+    .subscribe()
+
+El operador-método switchMap(params => ObservableInput<any>) recibe una funcion flecha por argumento.El valor de los params se le puede mandar a otro Observable.Es justo lo que necesitabamos.
+
+  this.activatedRoute.params
+    .pipe( switchMap( (param) => this.paisService.getPaisPorCode(param.id))
+   .subscribe()
+
+		VIDEO 113 VER PAIS DESIGNING UI && OPERADOR RXJS TAP
+
+Debería validar que el param con el código del país exista.Si no existe puedo redireccionarlo a la pantalla de busqueda.
+También podemos proteger la ruta de forma que si el Id no existe no se cargue ni por un momento la pantalla(algo que si sucede al redireccionar)Lo veremos más adelante
+
+Es momento de explicar otro operador RxJS sumamente útil,que es el 'tap'.El tap es un operador que dispara un efecto secundario.Veamoslo:
+
+this.activatedRoute.params
+  .pipe(
+    switchMap( ({id}) => this.paisService.getPaisPorCode( id),
+    tap( v => console.log(v)) <- el tap va a recibir la salida del swithMap e imprimirlo por consola
+
+*ngFor="let language of pais.translations | keyvalue"
+        class="badge bg-primary mx-2"
+        >{{ language.value }}</span
+
+				SECCION 9 APPPAISES PARTE II
+
+Aquí continuaremos la aplicación de países, pero enfocados en la parte de las sugerencias y auto-completado, este es un breve listado de los temas fundamentales:
+1- ngClass y diferentes formas de manipular clases
+2- CSS condicionales
+3- Optimizaciones a peticiones HTTP
+4- Animaciones de CSS
+5- Auto-completado en la búsqueda de países
+
+No es una sección muy larga, pero dejaremos las bases de cómo funciona un auto-completado en general.
+
+				VIDEO 119 ngClass, class y [class.]
+
+Vamos a hablar de ngClass,class y [class] como un atributo controlado por Angular.
+Nos faltaba la región,vamos a usar el endpoint 'https://restcountries.eu/rest/v2/region/{region}.Las regiones pueden ser   
+
+
+Si yo necesito que cambie una clase  pero que permanezcan las demás puedo añadirla con [class.clase]="true".True será la condición para que el elemento tenga la clase que quiera.
+
+  <button **ngFor="let region of regiones"
+     class="btn btn-outline-primary"
+    (click)="activarRegion( region )"  
+     [class.abc]="true"  <- añademe la clase abc si es true
+>
+         {{ region  }}
+  </button>
+
+* Sacado del dev-tools
+<button _ngcontent-mvl-c54="" class="btn btn-outline-primary abc"> africa </button> 
+Puedo ver que se le añade una clase.Con todo esto podría añadir una clase condicionalmente:
+
+[class.btn-primary]="region === regionActiva" <- es realmente sencillo añadir y eliminar una clase condicionalmente con la directiva [class.className]="condition"
+
+* Sin embargo no es la única manera de realizar esto.Para ello usaremos la directiva [ngClass]="{}".No confundir ambas directivas.Este objeto puede llevar clases y si se cumple la condicion se añadirán:
+
+[ngClass]="{
+  "cssClass":"condition",
+  "otraClase":"otraCondicion"
+}"
+
+Se puede ver que la diferencia es que [class.clase]="condition" es para añadir UNA clase,mientras que la otra directiva [ngClass]="{}" es para añadir varias,más de una.También vale para añadir simplemente estilos¿?Confirmar esto.
+
+         [ngClass]="{
+            'btn-primary':region === regionActiva,
+            'border':region === regionActiva,
+            'border-warning':region === regionActiva,
+            'border-2':region === regionActiva,
+            'btn-outline-warning':region !== regionActiva
+         }"
+Como inconveniente sólo puede añadir o quitar una clase.Además que va a evaluar todas las condiciones,con lo que podria derivar en problemas de performance.En el siguiente video veremos otra forma más de crear clases condicionales.
+
+				VIDEO 120 CLASES CSS CONDICIONALES
+
+Ya hemos visto dos formas de usar clases condicionalmente,el problema con [class.clase]="condition" es que sólo vale para agregar una clase y con la segunda directiva [ngClass]="{'class':true}" es que evalua todas las condiciones.
+Veamos como añadir/eliminar clases CSS evaluando una ÚNICA CONDICIÓN.Para ello usaremos la directiva [class].No confundir con las otras dos
+En esta directiva podré usar un ternario en el lado derecho:
+
+[class]="(region === regionActiva) ? 'btn btn-block' : 'border-outline border-none'"
+
+* Esto tiene la ventaja de poder usar varias clases,y además que solo va a evaluarse una vez.Cuando vaya a usar varias clases es la opción más eficiente,pero también se supone que en la template no debe haber lógica.Asi pues,será mejor crear un método que devuelva el retorno de este ternario y llamrlo a él,para sacar la lógica de la template:
+
+getClaseAUsar( region:string ):string {
+  return (region === this.regionActiva) ? 'btn btn-border-de-mierda' : 'clase otraClase d-flex';
+}
+Llamo al método simplemente:
+[class]="getClaseAUsar( region )"
+Parece la mejor aproximación cuando haya muchas clases,un método con un ternario y llamar al método en la template.
+
+				VIDEO 121 MOSTRAR PAISES POR REGION
+
+Creo el método que hace la petición en el servicio y lo implemento en la misma función que ya tenemos en el (click) del botón,la que cambia de región:
+
+  activarRegion( region: string ) {
+    if( region === this.regionActiva ){ return };
+    this.regionActiva = region;
+    this.paises =[];
+    this.hayError = false;
+
+    this.paisService.buscarPorRegion( region)
+      .subscribe( paises => {
+        this.paises = paises;
+      },(error) => {
+        this.hayError = true;
+        console.info(error)
+      })
+  }
+
+Aparte por motivos de mejora en la carga vaciamos paises(this.paises=[]) entre carga y carga y si es la misma region,que ni siquiera haga la carga.
+
+			VIDEO 122 MEJORANDO LAS PETICIONES EN EL SERVICIO 
+
+Tal vez no parezca mucho,pero nos estamos trayendo datos de más.El servicio de la API ofrece una manera de filtrar la respuesta,ya que retornan muchos campos y solo necesitamos unos pocos
+Esto se hace con el queryParams 'field',por ejemplo
+
+>https://restcountries.eu/rest/v2/name/usa?fields=name,capital
+
+Puedo ver que la respuesta baja de 11Kb a 1Kb.Esto es algo que debo tener en cuenta,no traerme toda la respuesta.
+En este ejemplo apenas necesitamos la capital y poco más.Necesitaremos los fields name,capital,alpha2code,flag y population
+
+Vamos a crearnos los queryParams creando una instancia-objeto de la clase HttpParams:
+
+const httpParams= new HttpParams().set('fields','name;capital;flag)
+
+despues hago la petición añadiendo el segundo argumento:
+return this.http.get<Coutry[]>(url , { params: httpParams } )
+  .pipe( tap(console.log)); <- lo imprimimos para asegurarnos que sólo vienen 4 campos. 
+
+			VIDEO 123 ANIMANDO CON CSS
+
+Me importo la CDN de las animaciones y englobo cada pagina-componente en un div.Le doy las animaciones que quiera.En cuanto a la tabla animo sólo las rows,ya que el tableheader lo estoy mostrando.Animo la row con el ngFor
+
+			VIDEO 124 MOSTRAR SUGERENCIAS AL ESCRIBIR
+
+Ya tenemos algo de la lógica del debouncer.Nuestro primer paso es crear el HTML de como quiero que luzcan las sugerencias.
+
+En la clase que llama al debouncer y obtiene las sugerencias me creo una propieda nueva para los paises sugeridos.Será sobre esta propiedad sobre la que iteraré creando <li> clickables que harán una petición con ese termino:
+
+* En la clase con acceso a las sugerencias
+ paisesSugeridos: Country[] = []; 
+
+  sugerencias( termino: string) {
+    this.hayError=false;
+
+    this.paisService.buscarPais( termino)
+      .subscribe( paises => {
+        this.paisesSugeridos= paises.splice(0,3);        <- quee devuelva 3 o 5 ,pero no demasiadas
+      })
+    }  
+
+* En la template itero sobre el array creando <li>
+  <ul class="list-group">
+    <li *ngFor="let pais of paisesSugeridos"
+    class="list-group-item list-group-item-action" >
+      {{ pais.name }}
+    </li>
+  </ul>

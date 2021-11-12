@@ -1,0 +1,146 @@
+							SECCION 19 SELECTORES ANIDADOS
+
+			VIDEO 281 TAREA CREAR LAZY LOAD
+
+Recuerda que siempre tengo que inyectar la tag <routlet-outlet></routlet-outlet> para que funcione el sistema de rutas.
+
+		VIDEO 283 SELECTOR DE REGIONES
+
+Fijate que debo usar propiedades privadas y un getter para acceder a ellas cuando tenga datos que necesito sean privados,como los continentes:
+
+*IMPORTANTE: lo que hace a la propiedad privada es la keyword 'private',no el underscore
+export class PaisesServiceService {
+ private _regiones: string[] = ["Africa", "Americas", "Asia", "Europe", "Oceania" ];
+
+ get regiones():string[] { 
+   return [...this._regiones];
+ }
+* Declarar una propiedad privada la ocultará,es por ello que necesito el getter.De nuevo,recuerda pasar una copia por valor rompiendo la referencia.
+Fijate además como simplemente hemos encapsulado un arreglo en el servicio y accedemos a él por el getter y por el servicio por ser data sensible.Muy interesante,los servicios no són sólo para peticiones REST.
+
+			VIDEO 284 SEGUNDO SELECTOR ANIDADO
+
+Desde la API restcountries permiten filtrar la respuesta con el queryParam ?fields=campo1;campo2;campo3 donde los campos serán las propiedades que me interesen.
+Siempre debo especificar el tipo del retorno,en este caso es una pequeña interfaz de paises:
+export interface PaisSmall {
+  name: string; 
+  alpha3Code: string;
+}
+
+getPaisPorContinente( continente: string) : Observable<PaisSmall[]> {
+ return this.http.get<PaisSmall[]>(url)
+}
+* Fijate que coinciden ambos
+
+			VIDEO 285 LIMPIAR PAIS CUANDO EL SELECTOR CAMBIA
+
+Recuerda que el operador 'switchMap' toma el valor de retorno  de un Observable y lo muta y regresa el valor de otro Observable.Es decir que switchMap debe regresar un nuevo Observable.
+IMPORTANTE: todo este conjunto de peticiones está basado en la propiedad valueChanges que regresa un Observable,es decir, que me puedo subscribir a los cambios de cualquier control de un formulario con esa propiedad.Angular permite hacer cosas tan increíbles como está:
+
+ngOnInit(){
+  this.miFormulario.get("region")?.valueChanges
+    .pipe(
+      tap( region => this.miFormulario.get("pais").reset(""), 
+      switchMap( region => this.ps.getPaisPorContinente(region) ) )
+    .subscribe( paises => this.paises = paises); <- seguro que se pueden anidar más
+
+* Fijate que puedo usar un tap cuando quiera y ni siquiera hacer nada con el valor de retorno,como este caso.Fijate también como puedo usar reset por cada control,aparte de poder hacerlo para el form al completo se puede hacer con un sólo campo.
+
+			VIDEO 286 TERCER SELECTOR ANIDADO
+
+Para el tercer selector que nos dé las fronteras necesitaré el código del pais:
+
+this.miFormulario.get("pais"?.valueChanges.subscribe( codigo => console.log(codigo) ); 
+
+* Sin embargo hay un problema,y es que a veces vendrá un string vacío por el reset() del pipe anterior.Vamos a hacer algo fácil en la petición y regresar un nuevo Observable con el operador 'rxjs' of(value) que devuelve un nuevo Observable del valor null(habrá que cambiar el retorno  e incluir el null):
+*En el servicio
+getPaisPorCodigo( codigo: string ): Observable<Pais | null> {
+ if(!codigo){
+  return of(null); <- retorna un nuevo Observable de cualquier valor,incluso un objeto vacio o un null.
+}
+ return this.http.get<Pais>(url);
+
+			VIDEO 287 LLENAR TERCER SELECTOR ANIDADO
+
+Fijate que podria usar varios switchMap y cada uno tomara el valor de entrada del anterior y lo modificará,retornando otro Observable al que me pueda subscribir:
+
+this.miFormulario.get("paises")?.valueChanges
+  .pipe(
+    switchMap()
+    switchMap() <- puedo usar más de uno!
+
+* Al final usaré otro campo.valueChanges.Recuerda que devuelve un Observable al que me puedo subscribir. 
+ // cuando cambie el pais 
+      this.miFormulario.get("pais")?.valueChanges
+          .pipe(
+             tap( () => {
+              this.fronteras = [];
+              this.miFormulario.get("frontera")?.reset("")
+            }), 
+            switchMap( (codigo) => this.ps.getPaisPorCodigo(codigo)))
+            .subscribe( 
+             paises => this.fronteras = paises?.borders || []
+             ); 
+  }
+
+				VIDEO 288 MEJORANDO LA EXPERIENCIA DE USUARIO	
+
+Podemos mejorar la experiencia cargando solo cada selector si realmente se ha pasado por el anterior con condicionales en la template y una propiedad boleana:
+  
+      // cuando cambie el pais 
+      this.miFormulario.get("pais")?.valueChanges
+          .pipe(
+             tap( () => {
+              this.fronteras = [];
+              this.miFormulario.get("frontera")?.reset("")
+              this.cargando = true;
+            }), 
+            switchMap( (codigo) => this.ps.getPaisPorCodigo(codigo)))
+            .subscribe( 
+             paises => {
+               this.fronteras = paises?.borders || [];
+                this.cargando = false;
+             }); 
+    
+* En la template  
+ <div class="row mb-2" *ngIf="fronteras!.length > 0"> 
+
+			VIDEO 290  CAMBIAR CODIGOS DE FRONTERAS POR LOS NOMBRES DE LOS PAISES 
+
+Para realizar un conjunto de peticiones rxjs me provee del operador combineLatest que regresa el producto/retorno de ejecutar varias peticiones(de llamar al subscribe en un grupo de Observables).Es decir que resuelve y ejecuta un grupo de peticiones.
+
+
+  getPaisesPorBorders( borders: string[]):Observable<PaisSmall[]>{
+    if(!borders){
+      return of([])
+    }
+
+    const peticiones: Observable<PaisSmall>[] = [];
+
+    borders.forEach( codigo => {
+      // recuerda que si no llamo al subscribe no disparo la peticion,asi que simplemente la almacenamos
+      const peticion = this.getPaisPorCodigoSmall(codigo)
+      peticiones.push(peticion);
+      //rxjs permite disparar todas las peticiones de manera simultanea(el operador combineLatest)
+    })
+    return combineLatest(peticiones)
+  }
+* Fijate en la potencia de rxjs.
+
+						SECCION 20 CICLOS DE VIDA
+
+En cuanto a ciclos de vidad más usados están el ngOnInit,que se ejecuta al cargar el componente(pero no se termina de pintar), el ngAfterViewInit(éste si espera a que el componente esté renderizado en la UI).El ngOnChanges(que se dispara cuando Angular ejecuta cualquier cambio).Éste es útil con input y outputs de data como con Mapas
+Otro muy útil es el ngOnDestroy,se usa sobre todo para limpieza del componente.Hay alguno más pero estos son los mas comunes.Todos se usan implementando una interfaz.
+Usar un ngIf dispara el ngOnDestroy y navegar a otra ruta lo mismo,elimina el componente.
+
+					VIDEO 291
+
+Esta sección está enfocada en hablar y explicar todos los pasos del ciclo de vida de un componente (también se aplican a las directivas que veremos después).
+
+No es una sección muy larga, pero mi objetivo es guiarlos en la documentación oficial y hacer un par de ejemplos con ellos. Luego de esta sección hay más aplicaciones que hacen uso de ciertos pasos del ciclo de vida de los componentes que comprenderemos gracias a esta sección.
+
+También estos pasos, son conocidos como Hooks, que posiblemente haz escuchado en React, pero funcionan diferente, pero comparten la similitud de que son Métodos (o funciones) que se ejecutan cuando algo sucede en un componente.
+Es una sección sumamente importante ésta.
+
+
+
